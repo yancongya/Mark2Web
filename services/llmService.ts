@@ -1,0 +1,600 @@
+
+import { GoogleGenAI } from "@google/genai";
+import { OutputFormat, GlobalSettings, GenerationConfig, LLMProviderConfig, ReverseOperationMode } from "../types";
+
+// --- Utility: Safe Env Access ---
+const getEnvApiKey = (): string => {
+    try {
+        // @ts-ignore
+        return typeof process !== 'undefined' && process.env ? process.env.API_KEY || '' : '';
+    } catch {
+        return '';
+    }
+};
+
+// --- Utility: Get Models & Test Connection ---
+
+export const testProviderConnection = async (provider: LLMProviderConfig, settings?: GlobalSettings): Promise<{ success: boolean, msg: string, fullResponse?: string }> => {
+    try {
+        let prompt = "Hello, are you online?";
+        const checkSearch = settings?.enableWebSearch;
+        const checkReasoning = settings?.enableReasoning;
+
+        // Customize prompt based on capabilities to verify them.
+        if (checkSearch) {
+            prompt = "What is the exact date today (YYYY-MM-DD) and what is the top news headline right now? Please answer directly.";
+        } else if (checkReasoning) {
+            prompt = "How many 'r's are in the word strawberry? Explain your reasoning step-by-step inside a thinking block.";
+        }
+
+        if (provider.type === 'google') {
+            const apiKey = provider.apiKey || getEnvApiKey();
+            if (!apiKey) throw new Error("No API Key provided. Please enter one in settings.");
+            
+            const ai = new GoogleGenAI({ apiKey });
+            
+            const tools = [];
+            if (checkSearch) tools.push({ googleSearch: {} });
+
+            const config: any = {};
+            if (checkSearch) config.tools = tools;
+
+            const result = await ai.models.generateContent({
+                model: provider.modelId || 'gemini-2.0-flash',
+                contents: prompt,
+                config
+            });
+            
+            // Access .text directly
+            const text = result.text || ""; 
+            
+            let verificationMsg = [];
+            if (checkSearch) {
+                const metadata = result.candidates?.[0]?.groundingMetadata;
+                const hasDate = text && /\d{4}-\d{2}-\d{2}/.test(text);
+                
+                if ((metadata && metadata.groundingChunks && metadata.groundingChunks.length > 0) || hasDate) {
+                    verificationMsg.push("✅ Search Grounding Verified");
+                } else {
+                    verificationMsg.push("⚠️ Search Metadata missing (Model may not support search)");
+                }
+            }
+            
+            return { 
+                success: true, 
+                msg: `Connected! ${verificationMsg.join(' ')}`,
+                fullResponse: text 
+            };
+        } else {
+            // OpenAI Compatible
+            const baseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+            
+            // CORS Warning for Official OpenAI
+            if (baseUrl.includes('api.openai.com') && typeof window !== 'undefined') {
+                return { success: false, msg: "⚠️ OpenAI Official API does not support direct browser connections (CORS). Please use a proxy or a compatible provider (Groq, DeepSeek, etc)." };
+            }
+
+            const body: any = {
+                model: provider.modelId,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: checkReasoning ? 2000 : 500 
+            };
+
+            const response = await fetch(`${baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${provider.apiKey}`
+                },
+                body: JSON.stringify(body)
+            }).catch(err => {
+                throw new Error(`Network Error: ${err.message}. (Check CORS/BaseURL)`);
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`Status ${response.status}: ${err}`);
+            }
+
+            const data = await response.json();
+            const choice = data.choices?.[0];
+            const content = choice?.message?.content || "";
+            const reasoning = choice?.message?.reasoning_content || ""; 
+
+            let verificationMsg = [];
+            
+            if (checkReasoning) {
+                if (reasoning || content.includes('<think>') || (content.length > 200 && content.toLowerCase().includes('reasoning'))) {
+                    verificationMsg.push("✅ Deep Thinking Verified");
+                } else {
+                     verificationMsg.push("ℹ️ No separate reasoning field detected");
+                }
+            }
+
+            if (checkSearch) {
+                const today = new Date().toISOString().slice(0, 10);
+                const year = new Date().getFullYear().toString();
+                
+                const hasDate = content.includes(today) || content.includes(year);
+                const refusal = content.toLowerCase().includes("cannot browse") || content.toLowerCase().includes("don't have real-time");
+
+                if (hasDate && !refusal) {
+                    verificationMsg.push("✅ Web Search Verified");
+                } else {
+                    verificationMsg.push("⚠️ Web Search NOT Detected");
+                }
+            }
+
+            return { 
+                success: true, 
+                msg: `Connected! ${verificationMsg.join('  ')}`,
+                fullResponse: reasoning ? `[Thinking Process]:\n${reasoning}\n\n[Final Answer]:\n${content}` : content
+            };
+        }
+    } catch (e: any) {
+        console.error("Connection Test Failed:", e);
+        return { success: false, msg: e.message || "Connection Failed", fullResponse: e.stack };
+    }
+};
+
+export const fetchProviderModels = async (provider: LLMProviderConfig): Promise<{ models: string[], log: string }> => {
+    let log = `Fetching models for ${provider.label}...\n`;
+    try {
+        if (provider.type === 'google') {
+            const apiKey = provider.apiKey || getEnvApiKey();
+            if (!apiKey) throw new Error("No API Key provided");
+            
+            log += `Provider type: Google\n`;
+            
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                log += `Attempting GET ${url} (Key hidden)...\n`;
+                
+                const res = await fetch(url).catch(err => { throw new Error(`Network Error: ${err.message}`); });
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => 'Unknown error');
+                    log += `ERROR: Status ${res.status} - ${errText}\n`;
+                    throw new Error(`API Error: ${res.status}`);
+                }
+                const data = await res.json();
+                const models = (data.models || [])
+                    .map((m: any) => m.name.replace('models/', ''))
+                    .filter((id: string) => id.includes('gemini') || id.includes('flash') || id.includes('pro'));
+                
+                log += `SUCCESS: Found ${models.length} models.\n`;
+                return { models, log };
+            } catch (innerError) {
+                log += `API Fetch Failed. Using Fallback List.\n`;
+                return { 
+                    models: [
+                        'gemini-2.0-flash',
+                        'gemini-2.0-flash-lite-preview-02-05',
+                        'gemini-1.5-flash',
+                        'gemini-1.5-pro',
+                        'gemini-3-flash-preview',
+                        'gemini-3-pro-preview'
+                    ],
+                    log
+                };
+            }
+
+        } else {
+            // OpenAI Compatible GET /models
+            const rawBaseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+            log += `Raw Base URL: ${rawBaseUrl}\n`;
+            
+            if (rawBaseUrl.includes('api.openai.com')) {
+                 throw new Error("OpenAI Official API does not support direct browser access (CORS).");
+            }
+
+            const urlsToTry = [
+                `${rawBaseUrl}/models`,
+                `${rawBaseUrl.replace(/\/v1$/, '')}/models`,
+                `${rawBaseUrl}/v1/models`
+            ];
+            if (rawBaseUrl.includes('/v1/')) {
+                 urlsToTry.push(`${rawBaseUrl.split('/v1/')[0]}/models`);
+            }
+
+            const uniqueUrls = [...new Set(urlsToTry)];
+
+            for (const url of uniqueUrls) {
+                log += `Attempting GET ${url}...\n`;
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${provider.apiKey}` }
+                    });
+
+                    log += `  Status: ${response.status} ${response.statusText}\n`;
+
+                    if (response.ok) {
+                         const data = await response.json();
+                         let foundModels: string[] = [];
+                         if (Array.isArray(data.data)) foundModels = data.data.map((m: any) => m.id);
+                         else if (Array.isArray(data)) foundModels = data.map((m:any) => m.id || m.name);
+
+                         if (foundModels.length > 0) {
+                             log += `  SUCCESS: Found ${foundModels.length} models.\n`;
+                             return { models: foundModels.sort(), log };
+                         }
+                    } else {
+                        const txt = await response.text().catch(() => '');
+                        log += `  Error Body: ${txt.substring(0, 100)}\n`;
+                    }
+                } catch (e: any) {
+                    log += `  EXCEPTION: ${e.message}\n`;
+                }
+            }
+
+            // Fallback Logic
+            log += `All attempts failed. Loading hardcoded fallbacks.\n`;
+            const lowerId = provider.providerId.toLowerCase();
+            let fallbacks: string[] = [];
+
+            if (lowerId.includes('deepseek')) fallbacks = ['deepseek-chat', 'deepseek-coder', 'deepseek-reasoner'];
+            else if (lowerId.includes('groq')) fallbacks = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+            else if (lowerId.includes('openai')) fallbacks = ['gpt-4o', 'gpt-4o-mini', 'o1'];
+
+            if (fallbacks.length > 0) return { models: fallbacks, log };
+            
+            throw new Error(`Failed to fetch models. Log:\n${log}`);
+        }
+    } catch (e: any) {
+        console.error("Fetch Models Failed:", e);
+        throw new Error(e.message + `\n\nLog:\n${log}`);
+    }
+}
+
+// --- Prompt Construction ---
+export const constructPrompts = (
+  content: string,
+  config: GenerationConfig,
+  settings: GlobalSettings
+) => {
+  const selectedStyle = settings.styles.find(s => s.id === config.style);
+  const styleInstruction = selectedStyle ? selectedStyle.prompt : "Clean and modern design.";
+
+  const selectedLevel = settings.levels.find(l => l.id === config.level);
+  const levelInstruction = selectedLevel ? selectedLevel.prompt : "Standard layout structure.";
+
+  let techInstruction = "";
+  if (config.format === OutputFormat.HTML) {
+      techInstruction = "Output Format: HTML5 Single File. Styling: Tailwind CSS (CDN).";
+  } else if (config.format === OutputFormat.PLAIN_HTML) {
+      techInstruction = "Output Format: HTML5 Semantic Only. Styling: None (No CSS).";
+  } else if (config.format === OutputFormat.TSX) {
+      techInstruction = "Output Format: React (TSX) Functional Component. Styling: Tailwind CSS classes. Use Lucide-React for icons.";
+  } else if (config.format === OutputFormat.VUE) {
+      techInstruction = "Output Format: Vue 3 Single File Component (SFC). Styling: Tailwind CSS classes.";
+  }
+
+  const temp = config.temperature;
+  let tempInstruction = "";
+  if (temp <= 0.3) tempInstruction = "Strict Compliance. Follow the structure exactly.";
+  else if (temp <= 0.7) tempInstruction = "Balanced Creativity. Enhance visual presentation reasonably.";
+  else tempInstruction = "High Creativity. Use imagination to enhance the visual layout significantly.";
+
+  const userPrompt = `
+    Input Content:
+    ---
+    ${content || "[Content will be inserted here]"}
+    ---
+
+    Configuration Requirements:
+    - ${techInstruction}
+    - Visual Style: ${selectedStyle ? selectedStyle.label : 'Custom'} -> ${styleInstruction}
+    - Refinement Level: ${selectedLevel ? selectedLevel.label : 'Custom'} -> ${levelInstruction}
+    - Creativity Level (Temperature ${temp}): ${tempInstruction}
+    - Custom User Instructions: ${config.customPrompt || "None"}
+
+    ---------------------------------------------------
+    CRITICAL INSTRUCTION - NO MARKDOWN / NO WRAPPING:
+    1. OUTPUT ONLY THE RAW CODE. 
+    2. DO NOT wrap the code in \`\`\`html, \`\`\`tsx, or \`\`\`xml blocks.
+    3. DO NOT include any introductory text ("Here is your code...") or conclusion.
+    4. Start immediately with the code (e.g., <!DOCTYPE html> or import React).
+    5. Ensure the code is complete and valid.
+    ---------------------------------------------------
+
+    Generate the complete, runnable code now.
+  `;
+
+  return {
+    systemInstruction: settings.systemInstruction.trim(),
+    userPrompt: userPrompt.trim()
+  };
+};
+
+/**
+ * Robustly extracts code from a response that might contain Markdown wrappers,
+ * explanatory text, or multiple code blocks.
+ */
+const stripMarkdown = (text: string): string => {
+    if (!text) return "";
+    let clean = text.trim();
+
+    // 1. Try to find the *last* code block pair if multiple exist, 
+    //    or the main wrapper if it's a single block.
+    //    We look for the first opening ``` and the last closing ```.
+    const firstBacktick = clean.indexOf('```');
+    
+    if (firstBacktick !== -1) {
+        const firstNewline = clean.indexOf('\n', firstBacktick);
+        // Find the last ``` occurrence
+        const lastBacktick = clean.lastIndexOf('```');
+
+        // Ensure we have a valid block (start < end)
+        if (firstNewline !== -1 && lastBacktick > firstNewline) {
+            // Extract everything between the first code block header and the last code block footer
+            // This handles: ```html\nCODE\n```
+            return clean.substring(firstNewline + 1, lastBacktick).trim();
+        }
+    }
+
+    // 2. Fallback: Sometimes models output `Here is code:\n<!DOCTYPE...` without backticks.
+    //    If it looks like HTML/React but has preamble, try to slice it.
+    
+    // HTML detection
+    if (clean.includes('<!DOCTYPE html>')) {
+        const startIndex = clean.indexOf('<!DOCTYPE html>');
+        if (startIndex > 0) {
+            clean = clean.substring(startIndex);
+        }
+        const closeTag = '</html>';
+        const endIndex = clean.lastIndexOf(closeTag);
+        if (endIndex !== -1) {
+             clean = clean.substring(0, endIndex + closeTag.length);
+        }
+        return clean.trim();
+    }
+
+    return clean;
+};
+
+// --- Google Provider Handler ---
+const generateViaGoogle = async (
+  provider: LLMProviderConfig,
+  systemInstruction: string,
+  userPrompt: string,
+  config: GenerationConfig,
+  settings: GlobalSettings,
+  onStream: (chunk: string) => void
+) => {
+    const apiKey = provider.apiKey || getEnvApiKey();
+    if (!apiKey) throw new Error("Google API Key is missing. Please add it in settings or .env");
+
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const tools = [];
+    if (settings.enableWebSearch) tools.push({ googleSearch: {} });
+
+    const aiConfig: any = {
+        systemInstruction: systemInstruction,
+        tools: tools.length > 0 ? tools : undefined,
+    };
+
+    try {
+        const responseStream = await ai.models.generateContentStream({
+          model: provider.modelId,
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          config: aiConfig
+        });
+
+        for await (const chunk of responseStream) {
+          if (chunk.text) onStream(chunk.text);
+        }
+    } catch (e: any) {
+        // Enhance error message for common issues
+        if (e.message && (e.message.includes('fetch') || e.message.includes('network'))) {
+            throw new Error(`Google API Network Error. Check internet connection or API Key validity.`);
+        }
+        throw e;
+    }
+};
+
+// --- OpenAI Compatible Handler ---
+const generateViaOpenAICompatible = async (
+    provider: LLMProviderConfig,
+    systemInstruction: string,
+    userPrompt: string,
+    config: GenerationConfig,
+    settings: GlobalSettings,
+    onStream: (chunk: string) => void
+  ) => {
+      const apiKey = provider.apiKey;
+      if (!apiKey) throw new Error(`${provider.label} API Key is missing.`);
+      
+      const baseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+      
+      // CORS Check for Browser
+      if (baseUrl.includes('api.openai.com') && typeof window !== 'undefined') {
+          throw new Error("OpenAI Official API does not support direct browser requests (CORS). Please use Groq, DeepSeek, or a proxy.");
+      }
+
+      const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+      };
+
+      const body: any = {
+          model: provider.modelId,
+          messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user', content: userPrompt }
+          ],
+          stream: true,
+          temperature: config.temperature
+      };
+
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+      }).catch(err => {
+          throw new Error(`Network Error connecting to ${baseUrl}: ${err.message}`);
+      });
+
+      if (!response.ok) {
+          const err = await response.text();
+          throw new Error(`API Error (${response.status}): ${err}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body received");
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed === 'data: [DONE]') return;
+              if (trimmed.startsWith('data: ')) {
+                  try {
+                      const json = JSON.parse(trimmed.slice(6));
+                      const content = json.choices?.[0]?.delta?.content || '';
+                      if (content) onStream(content);
+                  } catch (e) { /* ignore */ }
+              }
+          }
+      }
+  };
+
+// --- Main Unified Generator ---
+export const generateWebPage = async (
+  content: string,
+  config: GenerationConfig,
+  settings: GlobalSettings,
+  onStream: (chunk: string) => void
+): Promise<string> => {
+  
+  const { systemInstruction, userPrompt } = constructPrompts(content, config, settings);
+  const activeProvider = settings.providers.find(p => p.providerId === settings.activeProviderId);
+  
+  if (!activeProvider) throw new Error("No active provider selected.");
+  
+  // Safe Fallback for Google Key
+  if (activeProvider.type === 'google' && !activeProvider.apiKey) {
+     activeProvider.apiKey = getEnvApiKey();
+  }
+
+  let fullText = "";
+  const internalStream = (chunk: string) => {
+      fullText += chunk;
+      onStream(fullText); // Stream raw text during generation
+  };
+
+  try {
+      if (activeProvider.type === 'google') {
+          await generateViaGoogle(activeProvider, systemInstruction, userPrompt, config, settings, internalStream);
+      } else {
+          await generateViaOpenAICompatible(activeProvider, systemInstruction, userPrompt, config, settings, internalStream);
+      }
+  } catch (error) {
+      console.error("LLM Generation Error:", error);
+      throw error;
+  }
+
+  // --- FINAL CLEANUP ---
+  const cleanText = stripMarkdown(fullText);
+  onStream(cleanText);
+  return cleanText;
+};
+
+// --- Reverse Engineering (Code to Text) ---
+export const reverseEngineerCode = async (
+    code: string,
+    mode: ReverseOperationMode,
+    settings: GlobalSettings,
+    onStream: (chunk: string) => void
+): Promise<string> => {
+    
+    const activeProvider = settings.providers.find(p => p.providerId === settings.activeProviderId);
+    if (!activeProvider) throw new Error("No active provider selected.");
+    if (activeProvider.type === 'google' && !activeProvider.apiKey) {
+       activeProvider.apiKey = getEnvApiKey();
+    }
+
+    let systemInstruction = '';
+    let userPromptTemplate = '';
+    
+    // Use prompts from Settings instead of hardcoding
+    if (mode === 'content') {
+        systemInstruction = settings.reversePrompts?.contentSystem || "";
+        userPromptTemplate = settings.reversePrompts?.contentUser || "";
+    } else {
+        systemInstruction = settings.reversePrompts?.layoutSystem || "";
+        userPromptTemplate = settings.reversePrompts?.layoutUser || "";
+    }
+
+    // Replace placeholder with code
+    const userPrompt = userPromptTemplate.replace('{{CODE}}', code.substring(0, 100000));
+
+    let fullText = "";
+    const internalStream = (chunk: string) => {
+        fullText += chunk;
+        onStream(fullText);
+    };
+
+    try {
+        if (activeProvider.type === 'google') {
+            // Google implementation
+            const ai = new GoogleGenAI({ apiKey: activeProvider.apiKey });
+            const responseStream = await ai.models.generateContentStream({
+                model: activeProvider.modelId,
+                contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                config: { systemInstruction }
+            });
+            for await (const chunk of responseStream) {
+                if (chunk.text) internalStream(chunk.text);
+            }
+        } else {
+            // OpenAI Compatible implementation
+            const configStub = { temperature: 0.3 } as GenerationConfig; 
+            await generateViaOpenAICompatible(activeProvider, systemInstruction, userPrompt, configStub, settings, internalStream);
+        }
+    } catch (error) {
+        console.error("Reverse Engineering Error:", error);
+        throw error;
+    }
+
+    // Clean up any potential markdown wrapping that still occurred
+    const cleanText = stripMarkdown(fullText);
+    return cleanText;
+};
+
+// --- Element Modification (Visual Editor) ---
+export const modifyElementCode = async (
+  elementHtml: string,
+  instruction: string
+): Promise<string> => {
+    const apiKey = getEnvApiKey();
+    if (!apiKey) throw new Error("API Key Required for Visual Editor");
+
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `
+    Current HTML: ${elementHtml}
+    Instruction: ${instruction}
+    Return ONLY the modified HTML for this element. No markdown. No wrapper.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-lite-preview-02-05', 
+      contents: prompt,
+    });
+    
+    return stripMarkdown(response.text || elementHtml);
+  } catch (error) {
+    console.error("Element Modification Error:", error);
+    throw error;
+  }
+}

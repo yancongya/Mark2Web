@@ -1,0 +1,5 @@
+{
+  "name": "反推升级 MarkWeb - AI Page Generator",
+  "description": "Convert Markdown or Text files into fully styled, single-file webpages (HTML, React/TSX, Vue) using Gemini AI.",
+  "requestFramePermissions": []
+}
