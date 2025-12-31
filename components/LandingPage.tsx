@@ -169,8 +169,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         scrollTrigger: {
                             trigger: "#features",
                             scroller: scroller,
-                            start: "top 85%", // Triggers earlier to ensure visibility on jump
-                            toggleActions: "play none none none" // Persist: Don't hide when scrolling back
+                            start: "top 95%", // Increased sensitivity
+                            toggleActions: "play none none none" 
                         }
                     }
                 );
@@ -179,9 +179,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             // 3. Workflow Steps
             const steps = gsap.utils.toArray(".workflow-step");
             steps.forEach((step: any, i: number) => {
-                const direction = i % 2 === 0 ? -50 : 50;
+                // Determine direction based on even/odd
+                const fromX = i % 2 === 0 ? -50 : 50; 
+                
                 gsap.fromTo(step,
-                    { x: direction, opacity: 0 },
+                    { x: fromX, opacity: 0 },
                     {
                         x: 0, 
                         opacity: 1,
@@ -190,7 +192,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         scrollTrigger: {
                             trigger: step,
                             scroller: scroller,
-                            start: "top 85%",
+                            start: "top 90%", // Triggers earlier to ensure visibility
                             toggleActions: "play none none none" 
                         }
                     }
@@ -317,12 +319,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         transition: isHovering ? 'transform 0.1s ease-out' : 'transform 0.6s ease-[cubic-bezier(0.23,1,0.32,1)]'
                     }}
                 >
-                    {/* Decorative Elements sticking out in 3D (Parallax) 
-                        WE USE NEGATIVE TRANSLATION FACTOR for foreground elements to exaggerate parallax 
-                        when the card rotates away.
-                    */}
-                    
-                    {/* Top Right Box - Pops out (Positive Z) - Added explicit translation for "looseness" */}
+                    {/* Decorative Elements sticking out in 3D (Parallax) */}
                     <div 
                         className="absolute -top-12 -right-12 w-28 h-28 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl z-20 shadow-lg animate-float pointer-events-none"
                         style={{ 
@@ -331,7 +328,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         }}
                     ></div>
                     
-                    {/* Bottom Left Blob - Sits behind (Negative Z) - Moves in opposition to front */}
                     <div 
                         className="absolute -bottom-12 -left-12 w-40 h-40 bg-gradient-to-tr from-brand-400 to-cyan-500 rounded-full z-0 blur-xl opacity-60 animate-pulse-slow pointer-events-none"
                         style={{ 
@@ -542,50 +538,65 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
          </div>
       </section>
 
-      {/* Workflow Section */}
-      <section id="workflow" className="snap-start py-24 px-6 relative z-10">
-          <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-16">
+      {/* Workflow Section - Redesigned Left-Right Alternating Layout */}
+      <section id="workflow" className="snap-start py-24 px-6 relative z-10 flex items-center min-h-[50vh]">
+          <div className="max-w-5xl mx-auto w-full">
+              <div className="text-center mb-20">
                   <span className="text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase text-sm bg-brand-50 dark:bg-brand-900/20 px-3 py-1 rounded-full">{t('workflow_label')}</span>
                   <h2 className="text-3xl md:text-5xl font-bold mt-4 text-slate-900 dark:text-white">{t('workflow_title')}</h2>
               </div>
 
-              <div className="space-y-12 relative">
-                  {/* Connector Line */}
-                  <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-slate-200 via-brand-200 to-slate-200 dark:from-slate-800 dark:via-brand-900 dark:to-slate-800 -translate-x-1/2 hidden md:block"></div>
+              <div className="relative">
+                  {/* Connector Line (Desktop: Center, Mobile: Left) */}
+                  <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-slate-200 dark:via-slate-700 to-transparent md:-translate-x-1/2"></div>
 
-                  {[
-                      { title: t('workflow_step1_title'), desc: t('workflow_step1_desc'), icon: "1" },
-                      { title: t('workflow_step2_title'), desc: t('workflow_step2_desc'), icon: "2" },
-                      { title: t('workflow_step3_title'), desc: t('workflow_step3_desc'), icon: "3" },
-                      { title: t('workflow_step4_title'), desc: t('workflow_step4_desc'), icon: "4" }
-                  ].map((step, i) => (
-                      <div key={i} className={`workflow-step flex flex-col md:flex-row items-center gap-8 ${i % 2 !== 0 ? 'md:flex-row-reverse' : ''} group`}>
-                          <div className={`flex-1 md:text-right ${i % 2 !== 0 ? 'md:text-left' : ''}`}>
-                              {i % 2 === 0 && (
-                                  <>
-                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{step.title}</h3>
-                                     <p className="text-slate-500 dark:text-slate-400 mt-2">{step.desc}</p>
-                                  </>
-                              )}
-                          </div>
-                          
-                          <div className="relative z-10">
-                             <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 border-4 border-slate-100 dark:border-slate-700 group-hover:border-brand-500 group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-xl text-xl font-bold text-slate-400 group-hover:text-brand-600">
-                                 {step.icon}
-                             </div>
-                          </div>
+                  <div className="space-y-16">
+                    {[
+                        { title: t('workflow_step1_title'), desc: t('workflow_step1_desc'), icon: "1" },
+                        { title: t('workflow_step2_title'), desc: t('workflow_step2_desc'), icon: "2" },
+                        { title: t('workflow_step3_title'), desc: t('workflow_step3_desc'), icon: "3" },
+                        { title: t('workflow_step4_title'), desc: t('workflow_step4_desc'), icon: "4" }
+                    ].map((step, i) => (
+                        <div key={i} className="workflow-step relative flex items-center justify-between md:justify-normal w-full group">
+                            
+                            {/* Desktop: Left Side Content (Even Index) */}
+                            <div className={`hidden md:block w-[45%] ${i % 2 === 0 ? 'text-right pr-16' : ''}`}>
+                                {i % 2 === 0 && (
+                                    <div className="group-hover:-translate-x-2 transition-transform duration-300">
+                                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{step.title}</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">{step.desc}</p>
+                                    </div>
+                                )}
+                            </div>
 
-                          <div className={`flex-1 ${i % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
-                              {i % 2 !== 0 && (
-                                  <>
-                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{step.title}</h3>
-                                     <p className="text-slate-500 dark:text-slate-400 mt-2">{step.desc}</p>
-                                  </>
-                              )}
-                          </div>
-                      </div>
-                  ))}
+                            {/* Center Dot (Absolute Positioned for perfect alignment) */}
+                            <div className="absolute left-8 md:left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+                                <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-900 border-4 border-slate-100 dark:border-slate-800 shadow-xl flex items-center justify-center text-lg font-bold text-slate-400 group-hover:text-brand-600 group-hover:border-brand-500 group-hover:scale-110 transition-all duration-300 relative">
+                                    {step.icon}
+                                    {/* Pulse Ring */}
+                                    <div className="absolute inset-0 rounded-full border border-brand-500 opacity-0 group-hover:animate-ping"></div>
+                                </div>
+                            </div>
+
+                            {/* Mobile: Content always on right of line */}
+                            <div className="md:hidden pl-24 pr-4 w-full">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{step.title}</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+                            </div>
+
+                            {/* Desktop: Right Side Content (Odd Index) */}
+                            <div className={`hidden md:block w-[45%] ${i % 2 !== 0 ? 'text-left pl-16 ml-auto' : ''}`}>
+                                {i % 2 !== 0 && (
+                                    <div className="group-hover:translate-x-2 transition-transform duration-300">
+                                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{step.title}</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">{step.desc}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+                    ))}
+                  </div>
               </div>
           </div>
       </section>
