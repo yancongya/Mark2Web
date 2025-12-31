@@ -29,13 +29,13 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
 
 ## ✨ Key Features
 
-*   **📝 Text to UI**: Convert Markdown PRDs or loose text into structured, beautiful webpages.
-*   **🎨 Multi-Format Export**: Generate vanilla **HTML**, **React (TSX)** components, or **Vue 3 SFCs**.
-*   **🖌️ Visual AI Editor**: Click any element in the live preview and instruct AI to "Change color to blue" or "Make padding larger".
-*   **🧠 Reverse Engineering**: Upload existing code to extract content (to Markdown) or analyze layout (to PRD).
-*   **📱 Responsive Preview**: Real-time simulation of Mobile, Tablet, Desktop, and Print (A4) viewports.
-*   **🔌 Model Agnostic**: Native support for **Google Gemini**, with compatibility for **OpenAI**, **Groq**, and **DeepSeek**.
-*   **🛠️ Deep Customization**: Configure "System Instructions", design styles, and refinement levels.
+*   **✨ Immersive 3D Experience**: A modern UI featuring GSAP-powered animations, mouse-following parallax effects, and glassmorphism aesthetics for a premium feel.
+*   **📝 Text to UI**: Convert Markdown PRDs or loose text into structured, beautiful webpages instantly.
+*   **🎨 Multi-Format Export**: Generate vanilla **HTML**, **React (TSX)** components, or **Vue 3 SFCs** with Tailwind CSS injection.
+*   **🧠 Intelligent Reverse Engineering**: Upload existing code files to extract pure content (Code-to-Markdown) or analyze layout logic (Code-to-PRD).
+*   **🖌️ Visual AI Editor**: Click any element in the live preview and instruct AI to "Change color to blue" or "Make padding larger" without touching code.
+*   **🔌 Universal LLM Support**: Built-in support for **Google Gemini 2.0**, with full compatibility for **OpenAI**, **Groq**, and **DeepSeek** via custom endpoints.
+*   **🛠️ Global Configuration Hub**: Centralized management for API keys, System Instructions, custom style presets, and advanced model settings.
 
 ## 🛠️ Tech Stack
 
@@ -79,16 +79,21 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
 
 ## 📖 Usage Guide
 
-1.  **Select Source**: Upload a `.md` file or paste text requirements.
-2.  **Configure**: Open the sidebar settings to choose:
-    *   **Format**: HTML, React, or Vue.
-    *   **Style**: Minimalist, Corporate, Landing Page, etc.
-    *   **Level**: Wireframe vs. High-End visual.
-3.  **Generate**: Click "Generate Code".
-4.  **Refine**:
-    *   Use the **Visual Edit** toggle to click elements and tweak them with AI.
-    *   Manually edit code in the built-in editor.
-5.  **Export**: Download the file, copy code, or export as PDF/Image.
+1.  **Input Source**: 
+    *   **Forward Mode**: Drag & drop Markdown files or paste text requirements to generate UI.
+    *   **Reverse Mode**: Upload existing code (.html/.tsx) to extract content or analyze structure.
+2.  **Configure AI**: Open the **Settings Panel** to select:
+    *   **Format**: React, Vue, or HTML.
+    *   **Style Preset**: Minimalist, SaaS Dashboard, Landing Page, etc.
+    *   **Creativity**: Adjust temperature for strict structure or creative flair.
+3.  **Generate & Stream**: Click "Generate Code" and watch the AI construct your page in real-time.
+4.  **Interactive Refinement**:
+    *   **Visual Edit**: Toggle the editor, select elements, and use natural language prompt to tweak styles.
+    *   **Code Edit**: Manually refine the code in the built-in editor with syntax highlighting.
+5.  **Export**: 
+    *   Download the source code file.
+    *   Capture a full-page "Long Screenshot".
+    *   Export as PDF for documentation.
 
 ---
 
@@ -102,13 +107,13 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
 
 ## ✨ 核心功能
 
+*   **✨ 沉浸式 3D 交互**: 基于 GSAP 和 CSS 3D 打造的现代化落地页，具备鼠标跟随视差、滚动动画及毛玻璃质感体验。
 *   **📝 文本转 UI**: 将 Markdown PRD 或零散文本瞬间转化为结构化的网页。
 *   **🎨 多格式导出**: 支持生成原生 **HTML** (单文件)、**React (TSX)** 组件或 **Vue 3 SFC**。
-*   **🖌️ AI 可视化编辑**: 在预览图中点击任意元素，告诉 AI “把背景改成红色”或“增加圆角”，即刻生效。
-*   **🧠 代码反推 (Reverse Engineering)****: 上传现有代码，反向提取纯文本内容 (Markdown) 或分析布局逻辑 (生成 PRD)。
-*   **📱 实时响应式预览**: 内置手机、平板、桌面及 A4 打印视图模拟。
-*   **🔌 多模型支持**: 原生支持 **Google Gemini**，并兼容 **OpenAI**、**Groq**、**DeepSeek** (支持联网搜索与深度思考)。
-*   **🛠️ 深度定制**: 支持自定义 System Prompt、设计风格预设 (Style Presets) 和优化等级。
+*   **🧠 智能反向工程**: 上传现有代码文件，AI 可自动分析其布局逻辑生成 PRD (Code-to-Spec)，或提取纯文本内容为 Markdown。
+*   **🖌️ AI 可视化微调**: 在预览界面直接点击元素，使用自然语言（如“把背景改成渐变蓝”）即时修改样式，无需手动改代码。
+*   **🔌 全模型兼容**: 原生集成 **Google Gemini 2.0**，同时支持 **OpenAI (GPT-4o)**、**Groq**、**DeepSeek** 等兼容协议模型。
+*   **🛠️ 全局配置中心**: 集中管理 API 密钥、系统级指令 (System Prompt)、自定义设计风格预设及输出约束。
 
 ## 🛠️ 技术栈
 
@@ -152,16 +157,21 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
 
 ## 📖 使用指南
 
-1.  **导入源文件**: 上传 `.md` 文档或直接粘贴文本需求。
-2.  **配置生成参数**: 打开右侧侧边栏设置：
-    *   **输出格式**: HTML, React 或 Vue。
-    *   **设计风格**: 极简风、商务风、营销落地页等。
-    *   **优化等级**: 线框图 (Wireframe) 或 高保真 (High-End)。
-3.  **生成**: 点击“开始生成”。
-4.  **微调**:
-    *   开启 **可视化编辑 (Visual Edit)**，点击元素进行 AI 微调。
-    *   在左侧代码编辑器中手动修改。
-5.  **导出**: 下载源码文件、复制到剪贴板，或导出为 PDF/长截图。
+1.  **导入源**: 
+    *   **正向模式**: 拖拽 Markdown 文档或粘贴文本需求，准备生成 UI。
+    *   **反向模式**: 上传现有代码文件 (.html/.tsx) 以提取内容或分析布局。
+2.  **参数配置**: 在右侧侧边栏配置：
+    *   **输出格式**: 选择 React, Vue 或 HTML。
+    *   **风格预设**: 选择 SaaS 仪表盘、营销页、极简风等。
+    *   **创造力**: 调整 Temperature 以控制 AI 的自由度。
+3.  **实时生成**: 点击“开始生成”，AI 将实时流式输出完整代码，支持多版本历史回溯。
+4.  **交互式打磨**:
+    *   **可视化模式**: 开启 Visual Edit，选中元素让 AI 进行局部样式调整。
+    *   **代码模式**: 在内置编辑器中手动修改代码，实时预览。
+5.  **多维导出**: 
+    *   下载源码文件。
+    *   生成全网页长截图 (Long Screenshot)。
+    *   导出 PDF 文档。
 
 ---
 
