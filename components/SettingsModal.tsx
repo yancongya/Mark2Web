@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { testProviderConnection, fetchProviderModels } from '../services/llmService';
@@ -6,15 +5,15 @@ import { PromptPreset, LLMProviderConfig } from '../types';
 
 const SettingsModal: React.FC = () => {
   const { t, settings, updateSettings, resetSettings, isSettingsOpen, setSettingsOpen } = useAppContext();
-  
+
   // Settings Editor State
   const [activeSettingsTab, setActiveSettingsTab] = useState<'provider' | 'system' | 'styles' | 'levels' | 'reverse'>('provider');
   const [tempSettings, setTempSettings] = useState(settings);
-  
+
   // Connection Test States
   const [testingIndex, setTestingIndex] = useState<number | null>(null);
   const [testResult, setTestResult] = useState<{index: number, success: boolean, msg: string} | null>(null);
-  
+
   // Model Fetching States
   const [fetchingModelsIndex, setFetchingModelsIndex] = useState<number | null>(null);
   const [fetchedModels, setFetchedModels] = useState<{[key: number]: string[]}>({});
@@ -40,7 +39,6 @@ const SettingsModal: React.FC = () => {
   const handleResetSettings = () => {
       if (confirm(t('confirm_reset'))) {
           resetSettings();
-          setTempSettings(settings); // Settings will update via useEffect as well, but safe to set here
           setSettingsOpen(false);
       }
   };
@@ -57,7 +55,7 @@ const SettingsModal: React.FC = () => {
       setTempSettings(prev => ({
           ...prev,
           [type]: [
-              ...prev[type], 
+              ...prev[type],
               { id: `${type}_${Date.now()}`, label: 'New Preset', prompt: 'Describe the style/level here...' }
           ]
       }));
@@ -89,9 +87,9 @@ const SettingsModal: React.FC = () => {
       const provider = tempSettings.providers[index];
       try {
           const result = await testProviderConnection(provider, tempSettings);
-          setTestResult({ index, success: true, msg: result.msg }); 
+          setTestResult({ index, success: true, msg: result.msg });
           if(result.success) {
-               alert(`${result.msg}\n\n${t('test_response_preview')}:\n----------------\n${result.fullResponse?.substring(0, 1000)}...`);
+               alert(`${result.msg}\\n\\n${t('test_response_preview')}:\\n----------------\\n${result.fullResponse?.substring(0, 1000)}...`);
           }
       } catch (e: any) {
           setTestResult({ index, success: false, msg: e.message || t('test_failed') });
@@ -108,16 +106,16 @@ const SettingsModal: React.FC = () => {
           const { models, log } = result;
           if (models && models.length > 0) {
               setFetchedModels(prev => ({ ...prev, [index]: models }));
-              setCustomModelMode(prev => ({ ...prev, [index]: false })); 
+              setCustomModelMode(prev => ({ ...prev, [index]: false }));
               if(!provider.modelId || !models.includes(provider.modelId)) {
                   updateProvider(index, 'modelId', models[0]);
               }
-              alert(`Fetch Success!\nFound ${models.length} models.\n\nDebug Log:\n${log}`);
+              alert(`✅ Models fetched successfully!\\nFound ${models.length} models.\\n\\nDebug Log:\\n${log}`);
           } else {
-              alert(`No models found.\n\nDebug Log:\n${log}`);
+              alert(`No models found.\\n\\nDebug Log:\\n${log}`);
           }
       } catch (e: any) {
-          alert(`Failed to fetch models.\nError: ${e.message}`);
+          alert(`Failed to fetch models.\\nError: ${e.message}`);
       } finally {
           setFetchingModelsIndex(null);
       }
@@ -150,35 +148,35 @@ const SettingsModal: React.FC = () => {
                 </button>
               </div>
            </div>
-           
+
            {/* Tabs */}
            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0 overflow-x-auto">
-              <button 
-                onClick={() => setActiveSettingsTab('provider')} 
+              <button
+                onClick={() => setActiveSettingsTab('provider')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'provider' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
                 {t('settings_tab_provider')}
               </button>
-              <button 
-                onClick={() => setActiveSettingsTab('system')} 
+              <button
+                onClick={() => setActiveSettingsTab('system')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'system' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
                 {t('settings_tab_system')}
               </button>
-              <button 
-                onClick={() => setActiveSettingsTab('styles')} 
+              <button
+                onClick={() => setActiveSettingsTab('styles')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'styles' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
                 {t('settings_tab_styles')}
               </button>
-              <button 
-                onClick={() => setActiveSettingsTab('levels')} 
+              <button
+                onClick={() => setActiveSettingsTab('levels')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'levels' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
                 {t('settings_tab_levels')}
               </button>
-               <button 
-                onClick={() => setActiveSettingsTab('reverse')} 
+               <button
+                onClick={() => setActiveSettingsTab('reverse')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'reverse' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
                 {t('settings_tab_reverse')}
@@ -191,7 +189,7 @@ const SettingsModal: React.FC = () => {
               {activeSettingsTab === 'provider' && (
                 <div className="h-full overflow-y-auto custom-scrollbar p-6">
                     <div className="max-w-4xl mx-auto space-y-8 pb-10">
-                        
+
                         {/* Advanced Capabilities Toggle */}
                         <div className="bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-[#333] rounded-lg p-5 shadow-sm">
                             <h4 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
@@ -199,9 +197,9 @@ const SettingsModal: React.FC = () => {
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#252526] rounded border border-slate-200 dark:border-[#3c3c3c] cursor-pointer hover:border-brand-400 transition-colors">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={tempSettings.enableWebSearch} 
+                                    <input
+                                        type="checkbox"
+                                        checked={tempSettings.enableWebSearch}
                                         onChange={(e) => setTempSettings({...tempSettings, enableWebSearch: e.target.checked})}
                                         className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
                                     />
@@ -211,9 +209,9 @@ const SettingsModal: React.FC = () => {
                                     </div>
                                 </label>
                                 <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#252526] rounded border border-slate-200 dark:border-[#3c3c3c] cursor-pointer hover:border-brand-400 transition-colors">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={tempSettings.enableReasoning} 
+                                    <input
+                                        type="checkbox"
+                                        checked={tempSettings.enableReasoning}
                                         onChange={(e) => setTempSettings({...tempSettings, enableReasoning: e.target.checked})}
                                         className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
                                     />
@@ -236,9 +234,9 @@ const SettingsModal: React.FC = () => {
                                 <div key={p.providerId} className={`border rounded-xl transition-all ${p.providerId === tempSettings.activeProviderId ? 'bg-white dark:bg-[#1e1e1e] border-brand-500 ring-1 ring-brand-500 shadow-md' : 'bg-slate-50 dark:bg-[#1e1e1e] border-slate-200 dark:border-[#333] opacity-80 hover:opacity-100'}`}>
                                     <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => setTempSettings({...tempSettings, activeProviderId: p.providerId})}>
                                         <div className="flex items-center gap-3">
-                                            <input 
-                                                type="radio" 
-                                                name="activeProvider" 
+                                            <input
+                                                type="radio"
+                                                name="activeProvider"
                                                 checked={p.providerId === tempSettings.activeProviderId}
                                                 onChange={() => {}}
                                                 className="w-4 h-4 text-brand-600"
@@ -259,7 +257,7 @@ const SettingsModal: React.FC = () => {
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">{t('settings_api_key')}</label>
                                                      <div className="flex gap-2">
                                                         <div className="flex-1 relative">
-                                                            <input 
+                                                            <input
                                                                 type={visibleKeys[idx] ? "text" : "password"}
                                                                 placeholder="sk-..."
                                                                 value={p.apiKey}
@@ -283,7 +281,7 @@ const SettingsModal: React.FC = () => {
                                                                 )}
                                                             </button>
                                                         </div>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleTestConnection(idx)}
                                                             disabled={testingIndex === idx || !p.apiKey}
                                                             className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium rounded transition-colors disabled:opacity-50"
@@ -293,11 +291,11 @@ const SettingsModal: React.FC = () => {
                                                      </div>
                                                  </div>
                                             </div>
-                                            
+
                                             {(p.type === 'custom' || p.type === 'openai') && (
                                                  <div>
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">{t('settings_base_url')}</label>
-                                                     <input 
+                                                     <input
                                                          type="text"
                                                          value={p.baseUrl || ''}
                                                          onChange={(e) => updateProvider(idx, 'baseUrl', e.target.value)}
@@ -310,7 +308,7 @@ const SettingsModal: React.FC = () => {
                                             <div className="flex items-end gap-2">
                                                  <div className="flex-1">
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">{t('settings_model_id')}</label>
-                                                     
+
                                                      {(fetchedModels[idx] && fetchedModels[idx].length > 0 && !customModelMode[idx]) ? (
                                                         <div className="relative">
                                                             <select
@@ -336,7 +334,7 @@ const SettingsModal: React.FC = () => {
                                                         </div>
                                                      ) : (
                                                         <div className="relative">
-                                                            <input 
+                                                            <input
                                                                 type="text"
                                                                 value={p.modelId}
                                                                 onChange={(e) => updateProvider(idx, 'modelId', e.target.value)}
@@ -355,7 +353,7 @@ const SettingsModal: React.FC = () => {
                                                         </div>
                                                      )}
                                                  </div>
-                                                 <button 
+                                                 <button
                                                     onClick={() => handleFetchModels(idx)}
                                                     disabled={fetchingModelsIndex === idx || !p.apiKey}
                                                     className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium rounded transition-colors disabled:opacity-50 h-[38px]"
@@ -415,14 +413,14 @@ const SettingsModal: React.FC = () => {
                             <p className="text-sm text-blue-700 dark:text-blue-300">
                                {t('settings_presets_desc')}
                             </p>
-                            <button 
+                            <button
                                 onClick={() => addPreset(activeSettingsTab)}
                                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow-sm transition-colors"
                             >
                                 + {t('settings_add_preset')}
                             </button>
                         </div>
-                        
+
                         <div className="space-y-4">
                             {tempSettings[activeSettingsTab].map((preset, index) => (
                                 <div key={preset.id} className="bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-[#333] rounded-lg p-4 shadow-sm hover:border-brand-300 transition-colors group">
@@ -430,8 +428,8 @@ const SettingsModal: React.FC = () => {
                                         <div className="flex-1 space-y-3">
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">{t('settings_label')}</label>
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     value={preset.label}
                                                     onChange={(e) => updatePreset(activeSettingsTab, index, 'label', e.target.value)}
                                                     className="w-full text-sm font-bold bg-transparent border-b border-slate-200 dark:border-[#333] focus:border-brand-500 outline-none py-1 text-slate-900 dark:text-white"
@@ -439,7 +437,7 @@ const SettingsModal: React.FC = () => {
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">{t('settings_prompt')}</label>
-                                                <textarea 
+                                                <textarea
                                                     value={preset.prompt}
                                                     onChange={(e) => updatePreset(activeSettingsTab, index, 'prompt', e.target.value)}
                                                     className="w-full text-sm bg-slate-50 dark:bg-[#252526] border border-slate-200 dark:border-[#333] rounded p-2 focus:ring-1 focus:ring-brand-500 outline-none resize-y min-h-[80px] text-slate-700 dark:text-slate-300"
@@ -447,7 +445,7 @@ const SettingsModal: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-start pt-6">
-                                            <button 
+                                            <button
                                                 onClick={() => removePreset(activeSettingsTab, index)}
                                                 className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                 title={t('settings_delete')}
@@ -485,7 +483,7 @@ const SettingsModal: React.FC = () => {
                                 <textarea
                                     value={tempSettings.reversePrompts?.contentSystem || ''}
                                     onChange={(e) => setTempSettings({
-                                        ...tempSettings, 
+                                        ...tempSettings,
                                         reversePrompts: { ...tempSettings.reversePrompts, contentSystem: e.target.value }
                                     })}
                                     className="w-full h-24 p-3 bg-white dark:bg-[#1e1e1e] border border-slate-300 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-y text-slate-900 dark:text-slate-300"
@@ -496,7 +494,7 @@ const SettingsModal: React.FC = () => {
                                 <textarea
                                     value={tempSettings.reversePrompts?.contentUser || ''}
                                     onChange={(e) => setTempSettings({
-                                        ...tempSettings, 
+                                        ...tempSettings,
                                         reversePrompts: { ...tempSettings.reversePrompts, contentUser: e.target.value }
                                     })}
                                     className="w-full h-40 p-3 bg-white dark:bg-[#1e1e1e] border border-slate-300 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-y text-slate-900 dark:text-slate-300"
@@ -514,7 +512,7 @@ const SettingsModal: React.FC = () => {
                                 <textarea
                                     value={tempSettings.reversePrompts?.layoutSystem || ''}
                                     onChange={(e) => setTempSettings({
-                                        ...tempSettings, 
+                                        ...tempSettings,
                                         reversePrompts: { ...tempSettings.reversePrompts, layoutSystem: e.target.value }
                                     })}
                                     className="w-full h-24 p-3 bg-white dark:bg-[#1e1e1e] border border-slate-300 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-y text-slate-900 dark:text-slate-300"
@@ -525,7 +523,7 @@ const SettingsModal: React.FC = () => {
                                 <textarea
                                     value={tempSettings.reversePrompts?.layoutUser || ''}
                                     onChange={(e) => setTempSettings({
-                                        ...tempSettings, 
+                                        ...tempSettings,
                                         reversePrompts: { ...tempSettings.reversePrompts, layoutUser: e.target.value }
                                     })}
                                     className="w-full h-40 p-3 bg-white dark:bg-[#1e1e1e] border border-slate-300 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-y text-slate-900 dark:text-slate-300"

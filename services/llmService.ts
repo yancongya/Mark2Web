@@ -69,11 +69,8 @@ export const testProviderConnection = async (provider: LLMProviderConfig, settin
             // OpenAI Compatible
             const baseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
             
-            // CORS Warning for Official OpenAI and Xiaomi Mimo
-            if ((baseUrl.includes('api.openai.com') || baseUrl.includes('xiaomimimo.com')) && typeof window !== 'undefined') {
-                const providerName = baseUrl.includes('xiaomimimo') ? 'Xiaomi Mimo' : 'OpenAI Official';
-                return { success: false, msg: `⚠️ ${providerName} API may not support direct browser connections (CORS). If the connection fails, please use a proxy server or check if the API allows browser access.` };
-            }
+            // Note: OpenAI Official and Xiaomi Mimo may have CORS restrictions
+            // We'll try anyway but provide helpful error messages if it fails
 
             const body: any = {
                 model: provider.modelId,
@@ -89,7 +86,13 @@ export const testProviderConnection = async (provider: LLMProviderConfig, settin
                 },
                 body: JSON.stringify(body)
             }).catch(err => {
-                throw new Error(`Network Error: ${err.message}. (Check CORS/BaseURL)`);
+                let errorMsg = `Network Error: ${err.message}`;
+                if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
+                    const providerName = baseUrl.includes('xiaomimimo') ? 'Xiaomi Mimo' : 'OpenAI-compatible';
+                    errorMsg += `\n\n⚠️ ${providerName} API may not support direct browser access due to CORS restrictions.`;
+                    errorMsg += `\n\nSolutions:\n1. Use a proxy server\n2. Check if the API provider allows browser access\n3. Verify your API key and Base URL`;
+                }
+                throw new Error(errorMsg);
             });
 
             if (!response.ok) {
@@ -184,10 +187,8 @@ export const fetchProviderModels = async (provider: LLMProviderConfig): Promise<
             const rawBaseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
             log += `Raw Base URL: ${rawBaseUrl}\n`;
             
-            if (rawBaseUrl.includes('api.openai.com') || rawBaseUrl.includes('xiaomimimo.com')) {
-                 const providerName = rawBaseUrl.includes('xiaomimimo') ? 'Xiaomi Mimo' : 'OpenAI Official';
-                 throw new Error(`${providerName} API may not support direct browser access (CORS). If fetching models fails, you can manually enter the model ID.`);
-            }
+            // Note: OpenAI Official and Xiaomi Mimo may have CORS restrictions
+            // We'll try anyway but use fallbacks if it fails
 
             const urlsToTry = [
                 `${rawBaseUrl}/models`,
@@ -239,7 +240,10 @@ export const fetchProviderModels = async (provider: LLMProviderConfig): Promise<
             else if (lowerId.includes('openai')) fallbacks = ['gpt-4o', 'gpt-4o-mini', 'o1'];
             else if (lowerId.includes('xiaomi') || lowerId.includes('mimo')) fallbacks = ['mimo-pro', 'mimo-lite', 'mimo-vision'];
 
-            if (fallbacks.length > 0) return { models: fallbacks, log };
+            if (fallbacks.length > 0) {
+                log += `Using fallback models: ${fallbacks.join(', ')}\\n`;
+                return { models: fallbacks, log };
+            }
             
             throw new Error(`Failed to fetch models. Log:\n${log}`);
         }

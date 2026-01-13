@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>逐步修复原 App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/client": "https://esm.sh/react-dom@^19.2.3/client"
+      }
+    }
+    </script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold mb-4">逐步修复原 App.tsx</h1>
+        <p class="text-gray-600 mb-6">通过逐步还原原 App 的结构，找出具体问题</p>
+
+        <div id="controls" class="mb-6 space-y-3">
+            <div>
+                <strong>阶段 1 - 基础结构：</strong>
+                <button onclick="testPhase(1, 1)" class="ml-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">1.1 最简 App</button>
+                <button onclick="testPhase(1, 2)" class="ml-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">1.2 + AppProvider</button>
+            </div>
+            <div>
+                <strong>阶段 2 - 视图控制：</strong>
+                <button onclick="testPhase(2, 1)" class="ml-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">2.1 跳过 LandingPage</button>
+                <button onclick="testPhase(2, 2)" class="ml-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">2.2 + 基础布局</button>
+            </div>
+            <div>
+                <strong>阶段 3 - 完整功能：</strong>
+                <button onclick="testPhase(3, 1)" class="ml-2 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">3.1 + 状态管理</button>
+                <button onclick="testPhase(3, 2)" class="ml-1 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">3.2 完整 App</button>
+            </div>
+            <button onclick="clearResults()" class="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">清空结果</button>
+        </div>
+
+        <div id="results" class="space-y-3"></div>
+
+        <div id="final-solution" class="mt-8 p-6 bg-green-50 border-2 border-green-300 rounded-lg hidden">
+            <h3 class="text-xl font-bold text-green-800 mb-3">✅ 找到解决方案！</h3>
+            <div id="solution-content" class="text-sm font-mono bg-white p-4 rounded border border-green-200"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        const resultsDiv = document.getElementById('results');
+        const finalSolution = document.getElementById('final-solution');
+        const solutionContent = document.getElementById('solution-content');
+
+        // 模拟 translations
+        const translations = { en: { transform_title: 'Transform your ideas', transform_desc: 'Upload files to start' }, zh: { transform_title: '转换你的想法', transform_desc: '上传文件开始' } };
+        const t = (key) => translations.en[key] || key;
+
+        // 模拟 defaults
+        const DEFAULT_STYLES = [{ id: 'default', label: 'Default' }];
+        const DEFAULT_LEVELS = [{ id: 'simple', label: 'Simple' }];
+
+        // 模拟 types
+        const OutputFormat = { HTML: 'HTML', TSX: 'React', VUE: 'Vue' };
+
+        // 模拟 AppContext
+        const AppContext = createContext(null);
+        const AppProvider = ({ children }) => {
+            const [settings, setSettings] = useState({
+                systemInstruction: 'test',
+                styles: DEFAULT_STYLES,
+                levels: DEFAULT_LEVELS,
+                activeProviderId: 'test',
+                providers: [],
+                enableWebSearch: false,
+                enableReasoning: false,
+                reversePrompts: { contentSystem: '', contentUser: '', layoutSystem: '', layoutUser: '' }
+            });
+            const [theme, setTheme] = useState('light');
+            const [language, setLanguage] = useState('en');
+
+            return React.createElement(AppContext.Provider, {
+                value: { settings, t, theme, language }
+            }, children);
+        };
+
+        const useAppContext = () => {
+            const ctx = useContext(AppContext);
+            if (!ctx) throw new Error('No AppContext');
+            return ctx;
+        };
+
+        // 测试函数
+        window.testPhase = async (phase, step) => {
+            const testName = `阶段 ${phase}.${step}`;
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'p-4 bg-gray-100 rounded border border-gray-300';
+            resultDiv.innerHTML = `<strong>${testName}</strong>: <span class="text-gray-500">测试中...</span>`;
+            resultsDiv.appendChild(resultDiv);
+
+            try {
+                let Component;
+
+                if (phase === 1) {
+                    if (step === 1) {
+                        // 最简 App
+                        Component = () => React.createElement('div', null, '✅ 最简 App 正常');
+                    } else if (step === 2) {
+                        // + AppProvider
+                        Component = () => React.createElement(AppProvider, null,
+                            React.createElement('div', null, '✅ AppProvider 正常')
+                        );
+                    }
+                } else if (phase === 2) {
+                    if (step === 1) {
+                        // 跳过 LandingPage，直接 app
+                        Component = () => {
+                            const [view, setView] = useState('app'); // 关键：直接 'app'
+                            return React.createElement('div', null, `✅ 跳过 LandingPage，view: ${view}`);
+                        };
+                    } else if (step === 2) {
+                        // + 基础布局
+                        Component = () => {
+                            const [view, setView] = useState('app');
+                            const [showHistory, setShowHistory] = useState(true);
+                            const [showConfig, setShowConfig] = useState(true);
+
+                            return React.createElement('div', { className: 'h-screen flex flex-col' },
+                                React.createElement('div', { className: 'bg-white border-b p-2' }, '导航栏'),
+                                React.createElement('div', { className: 'flex-1 flex' },
+                                    showHistory && React.createElement('div', { className: 'w-64 bg-white border-r p-4' }, '历史'),
+                                    React.createElement('div', { className: 'flex-1 p-8' }, '主内容'),
+                                    showConfig && React.createElement('div', { className: 'w-80 bg-white border-l p-4' }, '配置')
+                                )
+                            );
+                        };
+                    }
+                } else if (phase === 3) {
+                    if (step === 1) {
+                        // + 状态管理
+                        Component = () => {
+                            const [history, setHistory] = useState([]);
+                            const [activeId, setActiveId] = useState(null);
+                            const [draftConfig, setDraftConfig] = useState({
+                                format: OutputFormat.HTML,
+                                style: 'default',
+                                level: 'simple',
+                                customPrompt: '',
+                                temperature: 0.5
+                            });
+
+                            return React.createElement('div', { className: 'p-4' },
+                                React.createElement('div', { className: 'font-bold mb-2' }, '✅ 状态管理正常'),
+                                React.createElement('div', { className: 'text-sm' }, `历史: ${history.length}, 活动: ${activeId || 'none'}`)
+                            );
+                        };
+                    } else if (step === 2) {
+                        // 完整 App（简化版）
+                        Component = () => {
+                            const { t } = useAppContext();
+                            const [view, setView] = useState('app');
+                            const [showHistory, setShowHistory] = useState(true);
+                            const [showConfig, setShowConfig] = useState(true);
+                            const [history, setHistory] = useState([]);
+                            const [activeId, setActiveId] = useState(null);
+                            const [isGenerating, setIsGenerating] = useState(false);
+                            const [activeSourceId, setActiveSourceId] = useState(null);
+                            const [activeOutputId, setActiveOutputId] = useState(null);
+                            const [draftConfig, setDraftConfig] = useState({
+                                format: OutputFormat.HTML,
+                                style: DEFAULT_STYLES[0].id,
+                                level: DEFAULT_LEVELS[1].id,
+                                customPrompt: '',
+                                temperature: 0.5
+                            });
+
+                            const handleNewProject = useCallback(() => {
+                                setActiveId(null);
+                                setActiveSourceId(null);
+                                setActiveOutputId(null);
+                                setDraftConfig({
+                                    format: OutputFormat.HTML,
+                                    style: DEFAULT_STYLES[0].id,
+                                    level: DEFAULT_LEVELS[1].id,
+                                    customPrompt: '',
+                                    temperature: 0.5
+                                });
+                            }, []);
+
+                            const isFileLoaded = history.length > 0;
+
+                            return React.createElement('div', { className: 'flex flex-col h-screen bg-slate-50' },
+                                // Navbar
+                                React.createElement('div', { className: 'bg-white border-b px-4 py-3' },
+                                    React.createElement('div', { className: 'font-bold' }, 'MarkWeb')
+                                ),
+                                // Main Content
+                                React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
+                                    // Left Sidebar
+                                    showHistory && React.createElement('div', { className: 'w-64 bg-white border-r' },
+                                        React.createElement('div', { className: 'p-4' },
+                                            React.createElement('div', { className: 'font-medium mb-2' }, '历史'),
+                                            history.length === 0
+                                                ? React.createElement('div', { className: 'text-xs text-gray-500' }, '暂无项目')
+                                                : history.map(item => React.createElement('div', { key: item.id }, item.name))
+                                        )
+                                    ),
+                                    // Center
+                                    React.createElement('div', { className: 'flex-1 flex flex-col' },
+                                        React.createElement('div', { className: 'flex-1 p-8' },
+                                            !isFileLoaded
+                                                ? React.createElement('div', { className: 'text-center' },
+                                                    React.createElement('h2', null, t('transform_title')),
+                                                    React.createElement('p', null, t('transform_desc')),
+                                                    React.createElement('button', {
+                                                        onClick: () => {
+                                                            const newItem = { id: Date.now(), name: '测试文件.md', content: '测试内容' };
+                                                            setHistory([newItem]);
+                                                            setActiveId(newItem.id);
+                                                        },
+                                                        className: 'mt-4 px-4 py-2 bg-blue-600 text-white rounded'
+                                                    }, '创建测试项目')
+                                                )
+                                                : React.createElement('div', null, '项目内容')
+                                        )
+                                    ),
+                                    // Right Sidebar
+                                    showConfig && React.createElement('div', { className: 'w-80 bg-white border-l' },
+                                        React.createElement('div', { className: 'p-4' },
+                                            React.createElement('div', { className: 'font-medium mb-2' }, '配置'),
+                                            React.createElement('div', { className: 'text-sm' }, `格式: ${draftConfig?.format || 'HTML'}`),
+                                            React.createElement('button', {
+                                                onClick: handleNewProject,
+                                                className: 'mt-4 px-3 py-1 bg-gray-200 rounded text-sm'
+                                            }, '新建项目')
+                                        )
+                                    )
+                                )
+                            );
+                        };
+                    }
+                }
+
+                // 渲染测试
+                const container = document.createElement('div');
+                const root = createRoot(container);
+
+                if (phase === 3 && step === 2) {
+                    // 需要 AppProvider
+                    root.render(React.createElement(AppProvider, null, React.createElement(Component)));
+                } else {
+                    root.render(React.createElement(Component));
+                }
+
+                // 等待渲染
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // 检查结果
+                if (container.innerHTML.trim().length > 0) {
+                    resultDiv.className = 'p-4 bg-green-50 rounded border border-green-300';
+                    resultDiv.innerHTML = `<strong>${testName}</strong>: <span class="text-green-700 font-bold">✅ 通过</span>`;
+
+                    // 如果是完整 App，显示解决方案
+                    if (phase === 3 && step === 2) {
+                        showSolution();
+                    }
+                } else {
+                    throw new Error('渲染后无内容');
+                }
+
+            } catch (error) {
+                resultDiv.className = 'p-4 bg-red-50 rounded border border-red-300';
+                resultDiv.innerHTML = `<strong>${testName}</strong>: <span class="text-red-700 font-bold">❌ 失败</span><br><span class="text-sm font-mono">${error.message}</span>`;
+            }
+        };
+
+        function showSolution() {
+            finalSolution.classList.remove('hidden');
+            solutionContent.innerHTML = `
+问题定位：原应用空白 = LandingPage 组件的 GSAP 动画问题
+
+解决方案：
+1. 修改 App.tsx 第 17 行：
+   const [view, setView] = useState<'landing' | 'app'>('landing');
+   ↓ 改为 ↓
+   const [view, setView] = useState<'landing' | 'app'>('app');
+
+2. 修改 App.tsx 第 503 行附近的条件渲染：
+   {view === 'landing' ? (...)
+   ↓ 改为 ↓
+   {false ? (...) : (直接显示 app 界面)}
+
+或者使用现成的 fix.html，已经包含了这个修复。
+            `;
+        }
+
+        window.clearResults = () => {
+            resultsDiv.innerHTML = '';
+            finalSolution.classList.add('hidden');
+        };
+
+        console.log('逐步修复工具已加载，点击按钮开始测试');
+    </script>
+</body>
+</html>

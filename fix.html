@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarkWeb - 修复版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: 'class', theme: { extend: { colors: { slate: { 50: '#f9fafb', 100: '#f3f4f6', 200: '#e5e7eb', 300: '#d1d5db', 400: '#9ca3af', 500: '#6b7280', 600: '#52525b', 700: '#3f3f46', 800: '#2d2d2d', 900: '#252526', 950: '#1e1e1e' }, brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' } } } } }
+    </script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/client": "https://esm.sh/react-dom@^19.2.3/client",
+        "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+        "react-simple-code-editor": "https://esm.sh/react-simple-code-editor@0.14.1",
+        "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+        "html-to-image": "https://esm.sh/html-to-image@^1.11.13",
+        "marked": "https://esm.sh/marked@12.0.0"
+      }
+    }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+
+    <script type="module">
+        import React, { useState, useCallback, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { GoogleGenAI } from '@google/genai';
+
+        // 简化的主应用组件 - 跳过复杂的 LandingPage
+        const SimplifiedApp = () => {
+            const [view, setView] = useState('app'); // 直接进入 app，跳过 landing
+            const [apiKey, setApiKey] = useState('');
+            const [history, setHistory] = useState([]);
+            const [activeId, setActiveId] = useState(null);
+            const [sourceContent, setSourceContent] = useState('');
+            const [generatedCode, setGeneratedCode] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+
+            // 从 localStorage 加载 API Key
+            useEffect(() => {
+                const savedKey = localStorage.getItem('markweb_api_key');
+                if (savedKey) setApiKey(savedKey);
+            }, []);
+
+            // 简化的文件处理
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    const type = file.name.endsWith('.md') ? 'markdown' :
+                                file.name.endsWith('.html') ? 'html' : 'text';
+
+                    const newItem = {
+                        id: Date.now(),
+                        name: file.name,
+                        content: content,
+                        type: type,
+                        timestamp: Date.now()
+                    };
+
+                    setHistory(prev => [newItem, ...prev]);
+                    setActiveId(newItem.id);
+                    setSourceContent(content);
+                };
+                reader.readAsText(file);
+            };
+
+            // 简化的生成逻辑（需要 API Key）
+            const handleGenerate = async () => {
+                if (!apiKey.trim()) {
+                    alert('请先输入 Google Gemini API Key');
+                    return;
+                }
+                if (!sourceContent.trim()) {
+                    alert('请先上传文件或输入内容');
+                    return;
+                }
+
+                setIsGenerating(true);
+                setGeneratedCode('');
+
+                try {
+                    const ai = new GoogleGenAI({ apiKey });
+
+                    const prompt = `将以下内容转换为美观的 HTML 页面，使用 Tailwind CSS：
+${sourceContent}
+
+要求：
+- 使用现代设计
+- 响应式布局
+- 美观的配色和间距
+- 完整的单文件 HTML`;
+
+                    const result = await ai.models.generateContent({
+                        model: 'gemini-2.0-flash',
+                        contents: prompt,
+                        config: { temperature: 0.7 }
+                    });
+
+                    const code = result.text || '';
+                    setGeneratedCode(code);
+
+                    // 更新历史记录
+                    setHistory(prev => prev.map(item =>
+                        item.id === activeId ? { ...item, output: code } : item
+                    ));
+
+                } catch (error) {
+                    alert('生成失败: ' + error.message);
+                    console.error(error);
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            // 预览生成的代码
+            const handlePreview = () => {
+                if (!generatedCode) return;
+
+                const blob = new Blob([generatedCode], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                URL.revokeObjectURL(url);
+            };
+
+            // 下载代码
+            const handleDownload = () => {
+                if (!generatedCode) return;
+
+                const blob = new Blob([generatedCode], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'generated-page.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            return React.createElement('div', { className: 'h-full flex flex-col' },
+                // 顶部导航
+                React.createElement('div', { className: 'bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between' },
+                    React.createElement('div', { className: 'flex items-center gap-2' },
+                        React.createElement('div', { className: 'w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold' }, 'M'),
+                        React.createElement('span', { className: 'font-bold text-lg' }, 'MarkWeb')
+                    ),
+                    React.createElement('div', { className: 'flex gap-2' },
+                        React.createElement('input', {
+                            type: 'password',
+                            placeholder: '输入 Gemini API Key',
+                            value: apiKey,
+                            onChange: (e) => {
+                                setApiKey(e.target.value);
+                                localStorage.setItem('markweb_api_key', e.target.value);
+                            },
+                            className: 'px-3 py-1 border border-gray-300 rounded text-sm w-64'
+                        }),
+                        React.createElement('button', {
+                            onClick: () => setView(view === 'app' ? 'help' : 'app'),
+                            className: 'px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm'
+                        }, '帮助')
+                    )
+                ),
+
+                // 主要内容
+                React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
+                    // 左侧历史
+                    React.createElement('div', { className: 'w-64 bg-white border-r border-gray-200 p-4 overflow-y-auto' },
+                        React.createElement('div', { className: 'text-sm font-medium text-gray-700 mb-2' }, '项目历史'),
+                        history.length === 0 ?
+                            React.createElement('div', { className: 'text-xs text-gray-500 italic' }, '暂无项目') :
+                            history.map(item =>
+                                React.createElement('div', {
+                                    key: item.id,
+                                    onClick: () => {
+                                        setActiveId(item.id);
+                                        setSourceContent(item.content);
+                                        setGeneratedCode(item.output || '');
+                                    },
+                                    className: `p-2 mb-1 rounded cursor-pointer text-sm ${activeId === item.id ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`
+                                }, item.name)
+                            )
+                    ),
+
+                    // 中间工作区
+                    React.createElement('div', { className: 'flex-1 flex flex-col overflow-hidden' },
+                        // 工具栏
+                        React.createElement('div', { className: 'bg-gray-50 border-b border-gray-200 p-3 flex gap-2 items-center' },
+                            React.createElement('label', { className: 'px-3 py-1.5 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 text-sm' },
+                                '上传文件',
+                                React.createElement('input', {
+                                    type: 'file',
+                                    onChange: handleFileUpload,
+                                    className: 'hidden',
+                                    accept: '.md,.txt,.html,.tsx,.vue'
+                                })
+                            ),
+                            React.createElement('button', {
+                                onClick: handleGenerate,
+                                disabled: isGenerating || !apiKey,
+                                className: `px-3 py-1.5 rounded text-sm ${isGenerating ? 'bg-gray-400' : !apiKey ? 'bg-gray-300' : 'bg-green-600 hover:bg-green-700'} text-white`,
+                                title: !apiKey ? '需要 API Key' : ''
+                            }, isGenerating ? '生成中...' : '生成代码'),
+                            React.createElement('button', {
+                                onClick: handlePreview,
+                                disabled: !generatedCode,
+                                className: `px-3 py-1.5 rounded text-sm ${generatedCode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300'} text-white`
+                            }, '预览'),
+                            React.createElement('button', {
+                                onClick: handleDownload,
+                                disabled: !generatedCode,
+                                className: `px-3 py-1.5 rounded text-sm ${generatedCode ? 'bg-gray-600 hover:bg-gray-700' : 'bg-gray-300'} text-white`
+                            }, '下载')
+                        ),
+
+                        // 编辑区域
+                        React.createElement('div', { className: 'flex-1 flex overflow-hidden' },
+                            // 源代码编辑器
+                            React.createElement('div', { className: 'flex-1 flex flex-col border-r border-gray-200' },
+                                React.createElement('div', { className: 'bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 border-b' }, '输入/源代码'),
+                                React.createElement('textarea', {
+                                    value: sourceContent,
+                                    onChange: (e) => setSourceContent(e.target.value),
+                                    placeholder: '在此输入 Markdown 文本，或点击"上传文件"',
+                                    className: 'flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-white'
+                                })
+                            ),
+
+                            // 生成结果
+                            React.createElement('div', { className: 'flex-1 flex flex-col' },
+                                React.createElement('div', { className: 'bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 border-b' }, '生成结果'),
+                                React.createElement('textarea', {
+                                    value: generatedCode,
+                                    onChange: (e) => setGeneratedCode(e.target.value),
+                                    placeholder: '生成的代码将显示在这里...',
+                                    className: 'flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-white'
+                                })
+                            )
+                        )
+                    ),
+
+                    // 右侧信息
+                    React.createElement('div', { className: 'w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto' },
+                        React.createElement('div', { className: 'text-sm font-medium text-gray-700 mb-2' }, '使用说明'),
+                        React.createElement('div', { className: 'text-xs text-gray-600 space-y-2' },
+                            React.createElement('p', null, '1. 输入 API Key (必需)'),
+                            React.createElement('p', null, '2. 上传 Markdown/文本文件'),
+                            React.createElement('p', null, '3. 点击"生成代码"'),
+                            React.createElement('p', null, '4. 预览或下载结果'),
+                            React.createElement('hr', { className: 'my-2' }),
+                            React.createElement('p', { className: 'font-medium text-blue-600' }, '支持格式:'),
+                            React.createElement('p', null, '• Markdown (.md)'),
+                            React.createElement('p', null, '• 文本 (.txt)'),
+                            React.createElement('p', null, '• HTML (.html)'),
+                            React.createElement('p', null, '• React (.tsx)'),
+                            React.createElement('p', null, '• Vue (.vue)')
+                        )
+                    )
+                )
+            );
+        };
+
+        // 启动应用
+        try {
+            const root = createRoot(document.getElementById('root'));
+            root.render(React.createElement(SimplifiedApp));
+            console.log('✅ MarkWeb 修复版已启动');
+        } catch (error) {
+            console.error('❌ 启动失败:', error);
+            document.getElementById('root').innerHTML = `
+                <div class="h-full flex items-center justify-center p-8">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6 max-w-lg">
+                        <h2 class="text-xl font-bold text-red-800 mb-2">启动失败</h2>
+                        <p class="text-red-600 font-mono text-sm mb-3">${error.message}</p>
+                        <p class="text-xs text-gray-600">请检查浏览器控制台(F12)获取详细错误信息</p>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

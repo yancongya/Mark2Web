@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug MarkWeb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        .debug-box { border: 2px solid red; padding: 10px; margin: 10px; background: #ffe6e6; }
+        .success-box { border: 2px solid green; padding: 10px; margin: 10px; background: #e6ffe6; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">MarkWeb 调试页面</h1>
+
+        <div class="debug-box">
+            <h2 class="font-bold text-lg">1. 测试基础 React 加载</h2>
+            <div id="react-test"></div>
+        </div>
+
+        <div class="debug-box">
+            <h2 class="font-bold text-lg">2. 测试 Import Maps</h2>
+            <div id="import-test"></div>
+        </div>
+
+        <div class="debug-box">
+            <h2 class="font-bold text-lg">3. 测试 ESM 加载</h2>
+            <div id="esm-test"></div>
+        </div>
+
+        <div class="success-box">
+            <h2 class="font-bold text-lg">诊断信息</h2>
+            <div id="diagnostics"></div>
+        </div>
+
+        <div class="mt-6 p-4 bg-blue-100 rounded">
+            <h3 class="font-bold">如果上面都显示失败，请尝试：</h3>
+            <ol class="list-decimal ml-6 mt-2">
+                <li>使用 Chrome/Edge 最新版</li>
+                <li>清除浏览器缓存 (Ctrl+Shift+R)</li>
+                <li>检查网络是否能访问 esm.sh 和 cdn.tailwindcss.com</li>
+                <li>查看浏览器控制台(F12)的红色错误信息</li>
+            </ol>
+        </div>
+    </div>
+
+    <script type="module">
+        // 诊断信息
+        const diag = document.getElementById('diagnostics');
+        diag.innerHTML = `
+            <p>User Agent: ${navigator.userAgent}</p>
+            <p>Language: ${navigator.language}</p>
+            <p>Platform: ${navigator.platform}</p>
+            <p>Cookie Enabled: ${navigator.cookieEnabled}</p>
+            <p>Online: ${navigator.onLine}</p>
+        `;
+
+        // 测试 Import Maps 支持
+        const importTest = document.getElementById('import-test');
+        if ('HTMLScriptElement' in window && 'supports' in HTMLScriptElement && HTMLScriptElement.supports('importmap')) {
+            importTest.innerHTML = '<span style="color: green;">✓ Import Maps 支持</span>';
+        } else {
+            importTest.innerHTML = '<span style="color: red;">✗ Import Maps 不支持 - 需要现代浏览器</span>';
+        }
+
+        // 尝试加载 React
+        const reactTest = document.getElementById('react-test');
+        try {
+            import('https://esm.sh/react@^19.2.3').then(React => {
+                reactTest.innerHTML = '<span style="color: green;">✓ React 加载成功: ' + React.version + '</span>';
+            }).catch(err => {
+                reactTest.innerHTML = '<span style="color: red;">✗ React 加载失败: ' + err.message + '</span>';
+            });
+        } catch (e) {
+            reactTest.innerHTML = '<span style="color: red;">✗ ESM 不支持: ' + e.message + '</span>';
+        }
+    </script>
+</body>
+</html>
