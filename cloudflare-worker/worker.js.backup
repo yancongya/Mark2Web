@@ -1,0 +1,122 @@
+// Cloudflare Worker - 小米 Mimo API 代理
+// 部署地址: https://dash.cloudflare.com/workers
+
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
+
+async function handleRequest(request) {
+  // CORS 配置 - 允许所有域名访问
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Max-Age': '86400',
+  }
+
+  // 处理 OPTIONS 预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+
+  // 只允许 POST 请求
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({
+      error: 'Method not allowed',
+      message: 'Only POST method is supported'
+    }), {
+      status: 405,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+
+  try {
+    // 1. 验证 Authorization header
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({
+        error: 'Missing or invalid Authorization header',
+        message: 'Format: Authorization: Bearer YOUR_API_KEY'
+      }), {
+        status: 401,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      })
+    }
+
+    // 2. 获取并验证请求体
+    const requestBody = await request.json()
+
+    if (!requestBody.model) {
+      return new Response(JSON.stringify({
+        error: 'Missing required field: model',
+        example: { model: 'mimo-v2-flash', messages: [{ role: 'user', content: 'Hello' }] }
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (!requestBody.messages || !Array.isArray(requestBody.messages)) {
+      return new Response(JSON.stringify({
+        error: 'Missing or invalid field: messages',
+        example: { messages: [{ role: 'user', content: 'Hello' }] }
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // 3. 小米 Mimo API 地址
+    const apiUrl = 'https://api.xiaomimimo.com/v1/chat/completions'
+
+    // 4. 转发请求到小米 Mimo
+    const apiResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+        'User-Agent': 'Mark2Web-Proxy/1.0',
+      },
+      body: JSON.stringify(requestBody)
+    })
+
+    // 5. 处理 API 响应
+    const responseData = await apiResponse.json()
+
+    // 6. 返回响应（添加 CORS 头）
+    return new Response(JSON.stringify(responseData), {
+      status: apiResponse.status,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'X-Proxy-By': 'Cloudflare-Worker',
+        'X-Provider': 'xiaomimimo'
+      }
+    })
+
+  } catch (error) {
+    // 错误处理
+    console.error('Worker Error:', error)
+
+    return new Response(JSON.stringify({
+      error: 'Proxy Service Error',
+      message: error.message,
+      tip: 'Please check your API key and network connection'
+    }), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+}

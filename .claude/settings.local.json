@@ -6,7 +6,16 @@
       "Bash(findstr:*)",
       "Bash(echo:*)",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "WebSearch",
+      "WebFetch(domain:platform.xiaomimimo.com)",
+      "Bash(del:*)",
+      "Bash(dir:*)",
+      "Bash(wrangler:*)"
     ],
     "deny": [],
     "ask": []

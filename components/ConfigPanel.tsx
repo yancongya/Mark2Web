@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OutputFormat, GenerationConfig, FileData, ReverseOperationMode, GeneratedOutput, GenerationMode } from '../types';
 import { useAppContext } from '../contexts/AppContext';
-import { constructPrompts } from '../services/llmService';
+import { constructPrompts, fetchProviderModels } from '../services/llmService';
 
 interface ConfigPanelProps {
   config: GenerationConfig;
@@ -21,15 +21,15 @@ interface ConfigPanelProps {
   mode?: GenerationMode; 
 }
 
-const ConfigPanel: React.FC<ConfigPanelProps> = ({ 
-  config, 
-  setConfig, 
-  fileData, 
+const ConfigPanel: React.FC<ConfigPanelProps> = ({
+  config,
+  setConfig,
+  fileData,
   sources = [],
   activeSourceId,
   onSelectSource,
   generatedOutput,
-  onGenerate, 
+  onGenerate,
   onReverse,
   isGenerating,
   onResetFile,
@@ -37,13 +37,87 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 }) => {
   const { t, settings, updateSettings } = useAppContext();
   const [copyFeedback, setCopyFeedback] = useState(false);
-  
+
   // Modal States
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [previewPrompts, setPreviewPrompts] = useState<{systemInstruction: string, userPrompt: string} | null>(null);
 
+  // Model fetching states
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [customModelMode, setCustomModelMode] = useState(false);
+
   const handleChange = (key: keyof GenerationConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Auto-fetch models when active provider changes
+  useEffect(() => {
+    const activeProvider = settings.providers.find(p => p.providerId === settings.activeProviderId);
+    if (activeProvider && activeProvider.apiKey) {
+      handleFetchModels();
+    } else {
+      setFetchedModels([]);
+    }
+  }, [settings.activeProviderId, settings.providers]);
+
+  const handleFetchModels = async () => {
+    const activeProvider = settings.providers.find(p => p.providerId === settings.activeProviderId);
+    if (!activeProvider || !activeProvider.apiKey) {
+      alert("Please configure API key first in Settings");
+      return;
+    }
+
+    setIsFetchingModels(true);
+    try {
+      const result = await fetchProviderModels(activeProvider);
+      if (result.models && result.models.length > 0) {
+        setFetchedModels(result.models);
+        setCustomModelMode(false);
+
+        // Auto-update current model if it's not in the new list
+        if (!result.models.includes(activeProvider.modelId)) {
+          const updatedProviders = settings.providers.map(p =>
+            p.providerId === settings.activeProviderId
+              ? { ...p, modelId: result.models[0] }
+              : p
+          );
+          updateSettings({ ...settings, providers: updatedProviders });
+        }
+      } else {
+        setFetchedModels([]);
+        alert("No models found for this provider");
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch models:", error);
+      alert(`Failed to fetch models:\n${error.message}`);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
+
+  const handleModelChange = (modelId: string) => {
+    if (modelId === '__custom__') {
+      setCustomModelMode(true);
+      return;
+    }
+
+    const updatedProviders = settings.providers.map(p =>
+      p.providerId === settings.activeProviderId
+        ? { ...p, modelId }
+        : p
+    );
+    updateSettings({ ...settings, providers: updatedProviders });
+    setCustomModelMode(false);
+  };
+
+  const handleCustomModelUpdate = (customModel: string) => {
+    const updatedProviders = settings.providers.map(p =>
+      p.providerId === settings.activeProviderId
+        ? { ...p, modelId: customModel || '__custom__' }
+        : p
+    );
+    updateSettings({ ...settings, providers: updatedProviders });
   };
 
   const handleCopyConfig = () => {
@@ -138,23 +212,68 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
           {/* Configurations */}
           <div className={`space-y-4`}>
-            {/* Provider Selector (Quick Switch) */}
+            {/* Smart Model Selector - Uses actual fetched models */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('settings_provider_select')}</label>
-              <select 
-                value={settings.activeProviderId}
-                onChange={(e) => {
-                    const newId = e.target.value;
-                    const newSettings = { ...settings, activeProviderId: newId };
-                    updateSettings(newSettings);
-                }}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-md focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none"
-              >
-                {settings.providers.map((p) => (
-                    <option key={p.providerId} value={p.providerId}>{p.label}</option>
-                ))}
-              </select>
+                <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('settings_provider_select')}</label>
+                    <button
+                        onClick={handleFetchModels}
+                        disabled={isFetchingModels || !settings.providers.find(p => p.providerId === settings.activeProviderId)?.apiKey}
+                        className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        {isFetchingModels ? (
+                            <>
+                                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Fetching...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                {fetchedModels.length > 0 && !customModelMode ? (
+                    <select
+                        value={settings.providers.find(p => p.providerId === settings.activeProviderId)?.modelId || ''}
+                        onChange={(e) => handleModelChange(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-md focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none"
+                    >
+                        {fetchedModels.map((model) => (
+                            <option key={model} value={model}>{model}</option>
+                        ))}
+                        <option value="__custom__">+ {t('settings_custom_id_placeholder')}</option>
+                    </select>
+                ) : (
+                    <input
+                        type="text"
+                        value={settings.providers.find(p => p.providerId === settings.activeProviderId)?.modelId || ''}
+                        onChange={(e) => handleCustomModelUpdate(e.target.value)}
+                        placeholder="Enter model ID or click Refresh to fetch available models"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-md focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none font-mono"
+                    />
+                )}
             </div>
+
+            {/* Custom Model Input - Shown when user selects custom option */}
+            {customModelMode && (
+                <div className="space-y-1 animate-fade-in-up">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('settings_custom_model_id')}</label>
+                    <input
+                        type="text"
+                        placeholder="e.g., custom-model-v1, gpt-4-turbo, etc."
+                        onChange={(e) => handleCustomModelUpdate(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-md focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none font-mono"
+                    />
+                </div>
+            )}
 
             {/* Format */}
             <div className="space-y-1">

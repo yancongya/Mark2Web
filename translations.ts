@@ -108,7 +108,11 @@ export const translations = {
     settings_fetch_models: 'Fetch Models',
     settings_custom_id_placeholder: '✎ Enter Custom ID...',
     settings_back_to_list: 'Back to List',
-    
+    settings_quick_model_switch: 'Quick Model Switch',
+    settings_custom_model_id: 'Custom Model ID',
+    settings_proxy_url: 'Proxy URL (for CORS-restricted APIs)',
+    settings_proxy_placeholder: 'e.g., https://your-proxy.com/api',
+
     // Test Results
     test_success: 'Connected Successfully',
     test_failed: 'Connection Failed',
@@ -331,6 +335,10 @@ export const translations = {
     settings_fetch_models: '获取模型列表',
     settings_custom_id_placeholder: '✎ 输入自定义 ID...',
     settings_back_to_list: '返回列表',
+    settings_quick_model_switch: '快速模型切换',
+    settings_custom_model_id: '自定义模型 ID',
+    settings_proxy_url: '代理 URL (用于 CORS 受限的 API)',
+    settings_proxy_placeholder: '例如: https://your-proxy.com/api',
 
     // Test Results
     test_success: '连接成功',

@@ -32,6 +32,7 @@ export interface LLMProviderConfig {
   apiKey: string;
   modelId: string; // The actual model string ID sent to API
   supportsVision?: boolean;
+  proxyUrl?: string; // Optional proxy URL for CORS-restricted APIs (e.g., Xiaomi Mimo)
 }
 
 export interface PromptPreset {

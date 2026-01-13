@@ -1,0 +1,31 @@
+        } else {
+            // OpenAI Compatible GET /models
+            const rawBaseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+            const targetUrl = provider.proxyUrl || rawBaseUrl;
+
+            log += `Raw Base URL: ${rawBaseUrl}\\n`;
+            log += `Target URL (with proxy): ${targetUrl}\\n`;
+
+            // Note: OpenAI Official and Xiaomi Mimo may have CORS restrictions
+            // If proxyUrl is set, use it directly. Otherwise try direct access with fallback
+
+            let urlsToTry = [];
+
+            if (provider.proxyUrl) {
+                // Use proxy URL directly
+                urlsToTry = [`${targetUrl}/models`];
+                log += `Using proxy URL: ${urlsToTry[0]}\\n`;
+            } else {
+                // Try direct API access (will likely fail due to CORS)
+                urlsToTry = [
+                    `${rawBaseUrl}/models`,
+                    `${rawBaseUrl.replace(/\/v1$/, '')}/models`,
+                    `${rawBaseUrl}/v1/models`
+                ];
+                if (rawBaseUrl.includes('/v1/')) {
+                    urlsToTry.push(`${rawBaseUrl.split('/v1/')[0]}/models`);
+                }
+                log += `No proxy set, trying direct API access...\\n`;
+            }
+
+            const uniqueUrls = [...new Set(urlsToTry)];

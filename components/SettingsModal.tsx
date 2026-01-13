@@ -115,7 +115,15 @@ const SettingsModal: React.FC = () => {
               alert(`No models found.\\n\\nDebug Log:\\n${log}`);
           }
       } catch (e: any) {
-          alert(`Failed to fetch models.\\nError: ${e.message}`);
+          let errorMsg = `Failed to fetch models.\\nError: ${e.message}`;
+          if (provider.providerId.includes('xiaomi')) {
+              errorMsg += `\\n\\n⚠️ Xiaomi Mimo requires Cloudflare Worker proxy!\\n`;
+              errorMsg += `1. Update worker using: cloudflare-worker/worker_fixed.js\\n`;
+              errorMsg += `2. Deploy to Cloudflare Workers\\n`;
+              errorMsg += `3. Enter Worker URL in Proxy URL field above\\n`;
+              errorMsg += `4. Try fetching models again`;
+          }
+          alert(errorMsg);
       } finally {
           setFetchingModelsIndex(null);
       }
@@ -302,6 +310,43 @@ const SettingsModal: React.FC = () => {
                                                          placeholder="https://api.openai.com/v1"
                                                          className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors font-mono"
                                                      />
+                                                 </div>
+                                            )}
+
+                                            {(p.type === 'custom' || p.type === 'openai') && (
+                                                 <div className="mt-2">
+                                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                                                         {t('settings_proxy_url')}
+                                                         {p.providerId.includes('xiaomi') && (
+                                                             <span className="ml-2 text-brand-600 dark:text-brand-400 text-[10px] font-normal">
+                                                                 (必需: Cloudflare Worker)
+                                                             </span>
+                                                         )}
+                                                     </label>
+                                                     <input
+                                                         type="text"
+                                                         value={p.proxyUrl || ''}
+                                                         onChange={(e) => updateProvider(idx, 'proxyUrl', e.target.value)}
+                                                         placeholder={p.providerId.includes('xiaomi')
+                                                             ? 'https://your-worker.workers.dev'
+                                                             : t('settings_proxy_placeholder')}
+                                                         className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors font-mono"
+                                                     />
+                                                     {p.providerId.includes('xiaomi') && !p.proxyUrl && (
+                                                         <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-xs">
+                                                             <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                                                                 ⚠️ 小米 Mimo 需要 Cloudflare Worker 代理
+                                                             </p>
+                                                             <p className="text-yellow-700 dark:text-yellow-300 mb-1">
+                                                                 浏览器无法直接访问 api.xiaomimimo.com
+                                                             </p>
+                                                             <div className="mt-1 space-y-0.5">
+                                                                 <p className="text-yellow-700 dark:text-yellow-300">📁 查看: <code>cloudflare-worker/快速修复部署.md</code></p>
+                                                                 <p className="text-yellow-700 dark:text-yellow-300">🚀 使用 <code>worker_fixed.js</code> 部署</p>
+                                                                 <p className="text-yellow-700 dark:text-yellow-300">🔧 部署后，将 Worker URL 填入此处</p>
+                                                             </div>
+                                                         </div>
+                                                     )}
                                                  </div>
                                             )}
 
