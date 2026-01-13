@@ -25,28 +25,44 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [language, setLanguage] = useState<Language>('en');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [language, setLanguage] = useState<Language>(() => {
+    // Auto-detect language based on browser preference
+    const browserLang = navigator.language || navigator.userLanguage;
+    if (browserLang && browserLang.startsWith('zh')) {
+      return 'zh';
+    }
+    return 'en';
+  });
   const [settings, setSettings] = useState<GlobalSettings>(DEFAULT_SETTINGS);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
   // Load saved preferences
   useEffect(() => {
+    // Theme: Check localStorage first, then system preference
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
-    if (savedTheme) setTheme(savedTheme);
-    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      // Use system preference if no saved theme
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(systemPrefersDark ? 'dark' : 'light');
+    }
 
+    // Language: Check localStorage first, then use the default from useState (which already detects browser)
     const savedLang = localStorage.getItem('language') as Language;
-    if (savedLang) setLanguage(savedLang);
-    else if (navigator.language.startsWith('zh')) setLanguage('zh');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    // Note: The useState already handles browser language detection
 
     // Load Settings
     const savedSettings = localStorage.getItem('markweb_settings_v1');
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        // Merge with defaults to ensure new fields (if any in future) are present, 
-        // but prioritize saved values. 
+        // Merge with defaults to ensure new fields (if any in future) are present,
+        // but prioritize saved values.
         setSettings({
             ...DEFAULT_SETTINGS,
             ...parsed

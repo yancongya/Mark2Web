@@ -14,14 +14,15 @@ import { AppProvider, useAppContext } from './contexts/AppContext';
 
 const AppContent: React.FC = () => {
   const { t, settings } = useAppContext();
+
+  // View State
   const [view, setView] = useState<'landing' | 'app'>('landing');
-  const [isLoadingView, setIsLoadingView] = useState<boolean>(false);
-  
+
   // Layout State
   const [showHistory, setShowHistory] = useState(true);
   const [showConfig, setShowConfig] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Viewer State
   const [activeTab, setActiveTab] = useState<TabType>('source');
 
@@ -29,11 +30,11 @@ const AppContent: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  
+
   // Active Project Data
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [activeOutputId, setActiveOutputId] = useState<string | null>(null);
-  
+
   // Default config - USE IDs now
   const [draftConfig, setDraftConfig] = useState<GenerationConfig>({
     format: OutputFormat.HTML,
@@ -57,10 +58,10 @@ const AppContent: React.FC = () => {
             if (!item.sources) {
                 // Migrate old single fileData to sources array
                 const initialSource = { ...item.fileData, id: `src-${item.timestamp}`, timestamp: item.timestamp };
-                return { 
-                    ...item, 
-                    sources: [initialSource], 
-                    activeSourceId: initialSource.id 
+                return {
+                    ...item,
+                    sources: [initialSource],
+                    activeSourceId: initialSource.id
                 };
             }
             return item;
@@ -79,13 +80,12 @@ const AppContent: React.FC = () => {
   }, [history]);
 
   // --- View Switching ---
-  const switchView = (newView: 'landing' | 'app') => {
-    if (view === newView) return;
-    setIsLoadingView(true);
-    setTimeout(() => {
-      setView(newView);
-      setIsLoadingView(false);
-    }, 400); 
+  const handleStart = () => {
+    setView('app');
+  };
+
+  const handleGoToLanding = () => {
+    setView('landing');
   };
 
   const toggleFullscreen = () => {
@@ -482,135 +482,126 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      
-      {!isFullscreen && <Navbar onLogoClick={() => switchView('landing')} currentView={view} />}
-      
+
+      {/* Show Navbar in both landing and app views */}
+      {!isFullscreen && (
+        <Navbar onLogoClick={handleGoToLanding} currentView={view} />
+      )}
+
       {/* Settings Modal (Global) */}
       <SettingsModal />
 
       <div className={`flex-1 flex flex-col overflow-hidden relative ${!isFullscreen ? 'pt-16' : 'pt-0'}`}>
-        
-        {isLoadingView && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm transition-opacity duration-300">
-             <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
-                <span className="text-sm font-medium text-slate-500 animate-pulse">Loading...</span>
-             </div>
-          </div>
-        )}
+        {view === 'landing' ? (
+          <LandingPage onStart={handleStart} />
+        ) : (
+          <div className="flex-1 flex h-full overflow-hidden animate-fade-in-up">
+            {/* Left Sidebar - History */}
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showHistory ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}
+            >
+               <div className="w-64 h-full flex flex-col">
+                  <HistorySidebar
+                      history={history}
+                      activeId={activeId}
+                      onSelect={setActiveId}
+                      onNewProject={handleNewProject}
+                      onDelete={handleDeleteHistory}
+                  />
+               </div>
+            </div>
 
-        {!isLoadingView && (
-          view === 'landing' ? (
-            <LandingPage onStart={() => switchView('app')} />
-          ) : (
-            <div className="flex-1 flex h-full overflow-hidden animate-fade-in-up">
-              {/* Left Sidebar - History */}
-              <div 
-                className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showHistory ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}
-              >
-                 <div className="w-64 h-full flex flex-col">
-                    <HistorySidebar 
-                        history={history}
-                        activeId={activeId}
-                        onSelect={setActiveId}
-                        onNewProject={handleNewProject}
-                        onDelete={handleDeleteHistory}
-                    />
-                 </div>
-              </div>
+            {/* Center Content */}
+            <div className="flex-1 flex flex-col min-w-0 bg-slate-100 dark:bg-slate-950 relative">
 
-              {/* Center Content */}
-              <div className="flex-1 flex flex-col min-w-0 bg-slate-100 dark:bg-slate-950 relative">
-                
-                {!isFullscreen && (
-                    <>
-                        <button
-                            onClick={() => setShowHistory(!showHistory)}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-r-lg shadow-md flex items-center justify-center text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-all hover:w-7 group"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {showHistory ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />}
-                            </svg>
-                        </button>
+              {!isFullscreen && (
+                  <>
+                      <button
+                          onClick={() => setShowHistory(!showHistory)}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-r-lg shadow-md flex items-center justify-center text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-all hover:w-7 group"
+                      >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              {showHistory ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />}
+                          </svg>
+                      </button>
 
-                        <button
-                            onClick={() => setShowConfig(!showConfig)}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-l-lg shadow-md flex items-center justify-center text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-all hover:w-7 group"
-                        >
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {showConfig ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />}
-                            </svg>
-                        </button>
-                    </>
-                )}
+                      <button
+                          onClick={() => setShowConfig(!showConfig)}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-l-lg shadow-md flex items-center justify-center text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-all hover:w-7 group"
+                      >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              {showConfig ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />}
+                          </svg>
+                      </button>
+                  </>
+              )}
 
-                <div className="flex-1 overflow-hidden relative p-4 flex flex-col">
-                  {!isFileLoaded && !activeId ? (
-                      <div className="h-full flex flex-col items-center justify-center p-8">
-                        <div className="max-w-md w-full space-y-8 animate-fade-in-up">
-                          <div className="text-center">
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('transform_title')}</h2>
-                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                              {t('transform_desc')}
-                            </p>
-                          </div>
-                          <FileUploader onFileLoaded={handleFileLoaded} />
+              <div className="flex-1 overflow-hidden relative p-4 flex flex-col">
+                {!isFileLoaded && !activeId ? (
+                    <div className="h-full flex flex-col items-center justify-center p-8">
+                      <div className="max-w-md w-full space-y-8 animate-fade-in-up">
+                        <div className="text-center">
+                          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('transform_title')}</h2>
+                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                            {t('transform_desc')}
+                          </p>
                         </div>
+                        <FileUploader onFileLoaded={handleFileLoaded} />
                       </div>
-                  ) : (
-                    <div className="h-full flex flex-col bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-fade-in-up">
-                      <ResultViewer 
-                        outputs={currentOutputs}
-                        activeOutputId={activeOutputId}
-                        onSelectOutput={setActiveOutputId}
-                        
-                        // Sources Management
-                        sources={currentSources}
-                        activeSourceId={activeSourceId}
-                        onSelectSource={setActiveSourceId}
-                        onRenameSource={handleRenameSource}
-                        sourceCode={activeSource?.content || ''}
-                        fileName={activeSource?.name || 'Loading...'}
-                        
-                        isGenerating={isGenerating}
-                        isFullscreen={isFullscreen}
-                        onToggleFullscreen={toggleFullscreen}
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        onUpdateCode={handleUpdateCode}
-                        onUpdateSource={handleUpdateSource}
-                      />
                     </div>
-                  )}
-                </div>
-              </div>
+                ) : (
+                  <div className="h-full flex flex-col bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-fade-in-up">
+                    <ResultViewer
+                      outputs={currentOutputs}
+                      activeOutputId={activeOutputId}
+                      onSelectOutput={setActiveOutputId}
 
-              {/* Right Sidebar - Config */}
-              <div 
-                className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showConfig ? 'w-80 opacity-100' : 'w-0 opacity-0'}`}
-              >
-                  <div className="w-80 h-full flex flex-col">
-                    <ConfigPanel 
-                        config={draftConfig} 
-                        setConfig={setDraftConfig} 
-                        
-                        // Pass source selection logic to ConfigPanel
-                        sources={currentSources}
-                        activeSourceId={activeSourceId}
-                        onSelectSource={setActiveSourceId}
-                        fileData={activeSource}
-                        
-                        generatedOutput={activeOutput}
-                        onGenerate={handleGenerate}
-                        onReverse={handleReverse}
-                        isGenerating={isGenerating}
-                        onResetFile={handleResetFile}
-                        mode={generationMode}
+                      // Sources Management
+                      sources={currentSources}
+                      activeSourceId={activeSourceId}
+                      onSelectSource={setActiveSourceId}
+                      onRenameSource={handleRenameSource}
+                      sourceCode={activeSource?.content || ''}
+                      fileName={activeSource?.name || 'Loading...'}
+
+                      isGenerating={isGenerating}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                      activeTab={activeTab}
+                      onTabChange={setActiveTab}
+                      onUpdateCode={handleUpdateCode}
+                      onUpdateSource={handleUpdateSource}
                     />
                   </div>
+                )}
               </div>
             </div>
-          )
+
+            {/* Right Sidebar - Config */}
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showConfig ? 'w-80 opacity-100' : 'w-0 opacity-0'}`}
+            >
+                <div className="w-80 h-full flex flex-col">
+                  <ConfigPanel
+                      config={draftConfig}
+                      setConfig={setDraftConfig}
+
+                      // Pass source selection logic to ConfigPanel
+                      sources={currentSources}
+                      activeSourceId={activeSourceId}
+                      onSelectSource={setActiveSourceId}
+                      fileData={activeSource}
+
+                      generatedOutput={activeOutput}
+                      onGenerate={handleGenerate}
+                      onReverse={handleReverse}
+                      isGenerating={isGenerating}
+                      onResetFile={handleResetFile}
+                      mode={generationMode}
+                  />
+                </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

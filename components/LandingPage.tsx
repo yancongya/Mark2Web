@@ -136,16 +136,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   };
 
   useLayoutEffect(() => {
-    if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined' && containerRef.current) {
+    // Safety check for GSAP availability with retry logic
+    const initGSAP = () => {
+      if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+        console.warn('GSAP not yet available, retrying...');
+        setTimeout(initGSAP, 100); // Retry after 100ms
+        return;
+      }
+
+      if (!containerRef.current) {
+        console.warn('Container ref not available');
+        return;
+      }
+
+      try {
         gsap.registerPlugin(ScrollTrigger);
-        
+
         const scroller = containerRef.current;
         const ctx = gsap.context(() => {
-            
+
             // 1. Initial Hero Entry (Time-based, no scroll)
             const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-            
-            tl.fromTo(".hero-text-item", 
+
+            tl.fromTo(".hero-text-item",
                 { y: 40, opacity: 0 },
                 { y: 0, opacity: 1, duration: 1, stagger: 0.15 }
             )
@@ -158,7 +171,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             // 2. Scroll Triggered Animations for Features
             const cards = gsap.utils.toArray(".feature-card");
             if (cards.length > 0) {
-                 gsap.fromTo(cards, 
+                 gsap.fromTo(cards,
                     { y: 60, opacity: 0 },
                     {
                         y: 0,
@@ -170,7 +183,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                             trigger: "#features",
                             scroller: scroller,
                             start: "top 95%", // Increased sensitivity
-                            toggleActions: "play none none none" 
+                            toggleActions: "play none none none"
                         }
                     }
                 );
@@ -180,12 +193,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             const steps = gsap.utils.toArray(".workflow-step");
             steps.forEach((step: any, i: number) => {
                 // Determine direction based on even/odd
-                const fromX = i % 2 === 0 ? -50 : 50; 
-                
+                const fromX = i % 2 === 0 ? -50 : 50;
+
                 gsap.fromTo(step,
                     { x: fromX, opacity: 0 },
                     {
-                        x: 0, 
+                        x: 0,
                         opacity: 1,
                         duration: 1,
                         ease: "power3.out",
@@ -193,7 +206,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                             trigger: step,
                             scroller: scroller,
                             start: "top 90%", // Triggers earlier to ensure visibility
-                            toggleActions: "play none none none" 
+                            toggleActions: "play none none none"
                         }
                     }
                 );
@@ -224,7 +237,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         }, containerRef);
 
         return () => ctx.revert();
-    }
+      } catch (error) {
+        console.error('GSAP initialization error:', error);
+      }
+    };
+
+    // Start initialization with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initGSAP, 50);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   return (
