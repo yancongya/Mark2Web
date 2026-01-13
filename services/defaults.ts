@@ -175,7 +175,7 @@ export const DEFAULT_PROVIDERS: LLMProviderConfig[] = [
     label: 'Xiaomi Mimo',
     apiKey: '',
     modelId: 'mimo-pro',
-    baseUrl: 'https://api.xiaomimimo.com/v1'
+    baseUrl: 'https://api.xiaomimimo.com'
   }
 ];
 

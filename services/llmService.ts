@@ -69,9 +69,10 @@ export const testProviderConnection = async (provider: LLMProviderConfig, settin
             // OpenAI Compatible
             const baseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
             
-            // CORS Warning for Official OpenAI
-            if (baseUrl.includes('api.openai.com') && typeof window !== 'undefined') {
-                return { success: false, msg: "⚠️ OpenAI Official API does not support direct browser connections (CORS). Please use a proxy or a compatible provider (Groq, DeepSeek, etc)." };
+            // CORS Warning for Official OpenAI and Xiaomi Mimo
+            if ((baseUrl.includes('api.openai.com') || baseUrl.includes('xiaomimimo.com')) && typeof window !== 'undefined') {
+                const providerName = baseUrl.includes('xiaomimimo') ? 'Xiaomi Mimo' : 'OpenAI Official';
+                return { success: false, msg: `⚠️ ${providerName} API may not support direct browser connections (CORS). If the connection fails, please use a proxy server or check if the API allows browser access.` };
             }
 
             const body: any = {
@@ -183,8 +184,9 @@ export const fetchProviderModels = async (provider: LLMProviderConfig): Promise<
             const rawBaseUrl = (provider.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
             log += `Raw Base URL: ${rawBaseUrl}\n`;
             
-            if (rawBaseUrl.includes('api.openai.com')) {
-                 throw new Error("OpenAI Official API does not support direct browser access (CORS).");
+            if (rawBaseUrl.includes('api.openai.com') || rawBaseUrl.includes('xiaomimimo.com')) {
+                 const providerName = rawBaseUrl.includes('xiaomimimo') ? 'Xiaomi Mimo' : 'OpenAI Official';
+                 throw new Error(`${providerName} API may not support direct browser access (CORS). If fetching models fails, you can manually enter the model ID.`);
             }
 
             const urlsToTry = [
