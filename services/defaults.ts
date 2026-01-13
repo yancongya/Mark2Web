@@ -168,6 +168,14 @@ export const DEFAULT_PROVIDERS: LLMProviderConfig[] = [
     apiKey: '',
     modelId: 'deepseek-chat',
     baseUrl: 'https://api.deepseek.com'
+  },
+  {
+    providerId: 'xiaomi-mimo',
+    type: 'custom',
+    label: 'Xiaomi Mimo',
+    apiKey: '',
+    modelId: 'mimo-pro',
+    baseUrl: 'https://api.xiaomimimo.com/v1'
   }
 ];
 

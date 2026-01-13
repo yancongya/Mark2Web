@@ -235,6 +235,7 @@ export const fetchProviderModels = async (provider: LLMProviderConfig): Promise<
             if (lowerId.includes('deepseek')) fallbacks = ['deepseek-chat', 'deepseek-coder', 'deepseek-reasoner'];
             else if (lowerId.includes('groq')) fallbacks = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
             else if (lowerId.includes('openai')) fallbacks = ['gpt-4o', 'gpt-4o-mini', 'o1'];
+            else if (lowerId.includes('xiaomi') || lowerId.includes('mimo')) fallbacks = ['mimo-pro', 'mimo-lite', 'mimo-vision'];
 
             if (fallbacks.length > 0) return { models: fallbacks, log };
             
