@@ -772,18 +772,54 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
     return `Ln ${lines}, Col 1  Spaces: 2  UTF-8  ${activeTab === 'source' ? sourceExt.toUpperCase() : displayExt}`;
   };
 
-  const renderEditor = (code: string, onChange: (val: string) => void, language: string) => {
+  // Refs for scroll sync - separate for source and code editors
+  const sourceLineNumbersRef = useRef<HTMLDivElement>(null);
+  const sourceEditorContainerRef = useRef<HTMLDivElement>(null);
+  const codeLineNumbersRef = useRef<HTMLDivElement>(null);
+  const codeEditorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle scroll sync for source editor
+  const handleSourceScroll = () => {
+      if (sourceEditorContainerRef.current && sourceLineNumbersRef.current) {
+          sourceLineNumbersRef.current.scrollTop = sourceEditorContainerRef.current.scrollTop;
+      }
+  };
+
+  // Handle scroll sync for code editor
+  const handleCodeScroll = () => {
+      if (codeEditorContainerRef.current && codeLineNumbersRef.current) {
+          codeLineNumbersRef.current.scrollTop = codeEditorContainerRef.current.scrollTop;
+      }
+  };
+
+  // Helper to render editor with line numbers
+  const renderEditorWithLineNumbers = (
+    code: string,
+    onChange: (val: string) => void,
+    language: string,
+    lineNumbersRef: React.RefObject<HTMLDivElement>,
+    editorContainerRef: React.RefObject<HTMLDivElement>,
+    onScroll: () => void
+  ) => {
     const lineCount = code.split('\n').length;
     const lines = Array.from({ length: lineCount }, (_, i) => i + 1);
 
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-white dark:bg-slate-950 font-mono text-[14px]">
-            <div className="flex-shrink-0 flex flex-col items-end bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-[#858585] border-r border-slate-200 dark:border-[#333] select-none py-[10px] px-4 min-w-[50px] text-right overflow-hidden transition-colors">
+            <div
+                ref={lineNumbersRef}
+                className="flex-shrink-0 flex flex-col items-end bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-[#858585] border-r border-slate-200 dark:border-[#333] select-none py-[10px] px-4 min-w-[50px] text-right overflow-hidden transition-colors"
+                style={{ height: '100%', overflow: 'hidden' }}
+            >
                 {lines.map(n => (
                     <div key={n} className="leading-[1.5] h-[21px]">{n}</div>
                 ))}
             </div>
-            <div className="flex-1 h-full overflow-auto custom-scrollbar relative">
+            <div
+                ref={editorContainerRef}
+                className="flex-1 h-full overflow-auto custom-scrollbar relative"
+                onScroll={onScroll}
+            >
                  <Editor
                     value={code}
                     onValueChange={onChange}
@@ -1041,9 +1077,16 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
             <div className="flex h-full w-full">
                 {/* Editor Area */}
                 <div className={`flex flex-col h-full overflow-hidden ${showMdPreview ? 'w-1/2 border-r border-slate-200 dark:border-[#333]' : 'w-full'}`}>
-                    {renderEditor(sourceCode, onUpdateSource, sourceExt)}
+                    {renderEditorWithLineNumbers(
+                        sourceCode,
+                        onUpdateSource,
+                        sourceExt,
+                        sourceLineNumbersRef,
+                        sourceEditorContainerRef,
+                        handleSourceScroll
+                    )}
                 </div>
-                
+
                 {/* Preview Area (Split View) */}
                 {showMdPreview && (
                     <div className="w-1/2 h-full overflow-auto custom-scrollbar bg-white dark:bg-slate-950 p-8 prose dark:prose-invert max-w-none">
@@ -1052,12 +1095,15 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                 )}
             </div>
         )}
-        
+
         {activeTab === 'code' && activeOutputId && (
-            renderEditor(
-                generatedCode, 
-                (val) => onUpdateCode(activeOutputId, val), 
-                codeExt
+            renderEditorWithLineNumbers(
+                generatedCode,
+                (val) => onUpdateCode(activeOutputId, val),
+                codeExt,
+                codeLineNumbersRef,
+                codeEditorContainerRef,
+                handleCodeScroll
             )
         )}
         {activeTab === 'code' && !activeOutputId && (
