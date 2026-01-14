@@ -843,6 +843,13 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
     return Prism.highlight(code, grammar, prismLang);
   };
 
+  const estimateTokens = (text: string) => {
+      if (!text) return 0;
+      const chineseCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+      const otherCount = text.length - chineseCount;
+      return chineseCount + Math.ceil(otherCount / 4);
+  };
+
   const getStatusBarInfo = () => {
     if (activeTab === 'preview') return isEditMode ? t('editor_active') : t('preview');
     const text = activeTab === 'source' ? sourceCode : generatedCode;
@@ -1114,6 +1121,23 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                                 v{groupOutputs.length - groupOutputs.findIndex(o => o.id === currentActiveVersion.id)} 
                             </div>
                         )}
+                        
+                        {/* HOVER PANEL: Show full response content - ONLY DURING GENERATION */}
+                        {isGroupActive && isGenerating && (
+                             <div className="absolute left-full top-0 ml-2 w-[400px] max-h-[600px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-[9999] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto flex flex-col">
+                                 <div className="bg-slate-50 dark:bg-slate-800 p-2 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Complete Response Preview</span>
+                                     <span className="text-[10px] text-slate-400 font-mono">
+                                        {estimateTokens(currentActiveVersion.code)} tokens
+                                     </span>
+                                 </div>
+                                 <div className="flex-1 overflow-auto p-3 text-xs font-mono whitespace-pre-wrap text-slate-600 dark:text-slate-400 custom-scrollbar">
+                                     {currentActiveVersion.code.slice(0, 2000)}
+                                     {currentActiveVersion.code.length > 2000 && <span className="text-slate-400 italic block mt-2">... (content truncated for preview)</span>}
+                                 </div>
+                             </div>
+                        )}
+
                     </button>
                     
                     {/* Version Selector Trigger */}
@@ -1130,56 +1154,52 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                             </button>
                             {/* Dropdown Menu for Output Tab Group - Absolute positioning to overlay */}
                             {showVersionDropdown && (
-                                <div ref={dropdownRef} className="absolute top-full right-0 mt-1 w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-[9999] animate-fade-in-up">
+                                <div ref={dropdownRef} className="absolute top-full right-0 mt-1 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-[9999] animate-fade-in-up">
                                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-1">
-                                        {Object.entries(groupedOutputs).map(([fmt, outs]) => (
-                                            <div key={fmt} className="mb-2 last:mb-0">
-                                                <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50 dark:bg-slate-800/50 rounded mt-1 mb-1 flex justify-between items-center">
-                                                    <span>{getFormatLabel(fmt as OutputFormat)}</span>
-                                                </div>
-                                                {outs.map((out, index) => {
-                                                    const version = outs.length - index;
-                                                    const isActive = out.id === activeOutputId;
-                                                    return (
-                                                        <div key={out.id} className="flex items-center gap-1 group">
-                                                            <button
-                                                                onClick={() => {
-                                                                    onSelectOutput(out.id);
-                                                                    setShowVersionDropdown(false);
-                                                                }}
-                                                                className={`flex-1 flex items-center gap-3 px-3 py-2 text-xs rounded-md transition-colors text-left
-                                                                    ${isActive ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}
-                                                                `}
-                                                            >
-                                                                <span className={getFormatColor(fmt as OutputFormat)}>{getFormatIcon(fmt as OutputFormat)}</span>
-                                                                <div className="flex-1 flex justify-between items-center">
-                                                                    <span className="font-medium">v{version}</span>
-                                                                    <span className="text-[10px] opacity-50 font-mono whitespace-nowrap">
-                                                                        {new Date(out.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}
-                                                                    </span>
-                                                                </div>
-                                                                {isActive && <Icons.Check />}
-                                                            </button>
-                                                            {/* Delete Button - Only show if there are multiple versions */}
-                                                            {onDeleteOutput && outs.length > 1 && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        if (confirm(`删除版本 v${version}?`)) {
-                                                                            onDeleteOutput(out.id);
-                                                                        }
-                                                                    }}
-                                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
-                                                                    title="删除此版本"
-                                                                >
-                                                                    <Icons.Trash />
-                                                                </button>
-                                                            )}
+                                        <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50 dark:bg-slate-800/50 rounded mt-1 mb-1 flex justify-between items-center">
+                                            <span>{getFormatLabel(formatType)} History</span>
+                                        </div>
+                                        {groupOutputs.map((out, index) => {
+                                            const version = groupOutputs.length - index;
+                                            const isActive = out.id === activeOutputId;
+                                            return (
+                                                <div key={out.id} className="flex items-center gap-1 group">
+                                                    <button
+                                                        onClick={() => {
+                                                            onSelectOutput(out.id);
+                                                            setShowVersionDropdown(false);
+                                                        }}
+                                                        className={`flex-1 flex items-center gap-3 px-3 py-2 text-xs rounded-md transition-colors text-left
+                                                            ${isActive ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}
+                                                        `}
+                                                    >
+                                                        <span className={getFormatColor(formatType)}>{getFormatIcon(formatType)}</span>
+                                                        <div className="flex-1 flex justify-between items-center min-w-0">
+                                                            <span className="font-medium flex-shrink-0">v{version}</span>
+                                                            <span className="text-[10px] opacity-50 font-mono whitespace-nowrap truncate ml-2">
+                                                                {new Date(out.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})}
+                                                            </span>
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        ))}
+                                                        {isActive && <Icons.Check />}
+                                                    </button>
+                                                    {/* Delete Button */}
+                                                    {onDeleteOutput && groupOutputs.length > 1 && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm(`删除版本 v${version}?`)) {
+                                                                    onDeleteOutput(out.id);
+                                                                }
+                                                            }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                            title="删除此版本"
+                                                        >
+                                                            <Icons.Trash />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -1268,8 +1288,8 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
         {activeTab === 'preview' && (
             <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950">
                 {/* Preview Toolbar */}
-                <div className="h-10 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-[#1e1e1e] flex items-center px-4 justify-between select-none transition-colors relative z-20 overflow-visible">
-                   <div className="flex items-center gap-3">
+                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-[#1e1e1e] flex flex-wrap items-center px-2 py-1 justify-between select-none transition-colors relative z-20 overflow-visible min-h-[40px] gap-2">
+                   <div className="flex items-center gap-2 flex-wrap">
                        <select value={viewportMode} onChange={(e) => setViewportMode(e.target.value)} className="bg-white dark:bg-[#333] text-slate-700 dark:text-white text-xs border border-slate-300 dark:border-[#3c3c3c] rounded px-2 py-1 outline-none focus:border-brand-500 hover:bg-slate-50 dark:hover:bg-[#3c3c3c]">
                             <option value="responsive">{t('viewport_responsive')}</option>
                             <option value="mobile">{t('viewport_mobile')}</option>
@@ -1281,12 +1301,12 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                        </select>
                        <div className="flex items-center text-xs text-slate-500 dark:text-gray-400 gap-2">
                            <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-300 dark:border-[#3c3c3c] rounded overflow-hidden">
-                               <span className="px-1.5 py-1 bg-slate-100 dark:bg-[#333] border-r border-slate-300 dark:border-[#3c3c3c]">{t('width')}</span>
+                               <span className="hidden sm:inline-block px-1.5 py-1 bg-slate-100 dark:bg-[#333] border-r border-slate-300 dark:border-[#3c3c3c]">{t('width')}</span>
                                <input type="number" value={width} onChange={(e) => { setWidth(Number(e.target.value)); setViewportMode('custom'); }} className="w-12 bg-transparent text-slate-700 dark:text-white px-1.5 py-1 outline-none text-center appearance-none" disabled={viewportMode === 'responsive'} />
                            </div>
-                           <span>×</span>
+                           <span className="text-slate-400">×</span>
                            <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-300 dark:border-[#3c3c3c] rounded overflow-hidden">
-                               <span className="px-1.5 py-1 bg-slate-100 dark:bg-[#333] border-r border-slate-300 dark:border-[#3c3c3c]">{t('height')}</span>
+                               <span className="hidden sm:inline-block px-1.5 py-1 bg-slate-100 dark:bg-[#333] border-r border-slate-300 dark:border-[#3c3c3c]">{t('height')}</span>
                                <input type="number" value={height} onChange={(e) => { setHeight(Number(e.target.value)); setViewportMode('custom'); }} className="w-12 bg-transparent text-slate-700 dark:text-white px-1.5 py-1 outline-none text-center appearance-none" disabled={viewportMode === 'responsive'} />
                            </div>
                            <button onClick={handleRotate} title={t('rotate')} disabled={viewportMode === 'responsive'} className="p-1 hover:bg-slate-200 dark:hover:bg-[#3c3c3c] rounded text-slate-600 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed"><Icons.Rotate /></button>
@@ -1295,17 +1315,18 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
 
                    {/* VISUAL EDITOR TOGGLE */}
                    {canPreview && (
-                       <div className="flex items-center gap-2 border-l border-slate-300 dark:border-[#3c3c3c] pl-3 ml-2">
+                       <div className="flex items-center gap-2 pl-2 ml-auto sm:ml-0 border-l border-slate-300 dark:border-[#3c3c3c] sm:border-l-0">
                            <button 
                              onClick={() => setIsEditMode(!isEditMode)}
-                             className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded border transition-colors ${isEditMode ? 'bg-brand-600 border-brand-500 text-white' : 'bg-white dark:bg-[#333] border-slate-300 dark:border-[#3c3c3c] text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-[#3c3c3c]'}`}
+                             className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded border transition-colors ${isEditMode ? 'bg-brand-600 border-brand-500 text-white' : 'bg-white dark:bg-[#333] border-slate-300 dark:border-[#3c3c3c] text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-[#3c3c3c]'}`}
+                             title={isEditMode ? t('editor_active') : t('editor_enable')}
                            >
                              <Icons.Edit />
-                             {isEditMode ? t('editor_active') : t('editor_enable')}
+                             <span className="hidden md:inline">{isEditMode ? t('editor_active') : t('editor_enable')}</span>
                            </button>
                            <button 
                                 onClick={handleRefresh}
-                                className="flex items-center justify-center w-6 h-6 rounded hover:bg-slate-200 dark:hover:bg-[#3c3c3c] text-slate-500 dark:text-white transition-colors"
+                                className="flex items-center justify-center w-7 h-7 rounded hover:bg-slate-200 dark:hover:bg-[#3c3c3c] text-slate-500 dark:text-white transition-colors"
                                 title="Refresh Preview"
                            >
                                <Icons.Refresh />
@@ -1315,7 +1336,7 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
 
                    {/* Output Switcher for Preview (Custom Dropdown) */}
                    {outputs.length > 0 && activeOutputId && (
-                       <div className="relative ml-2 border-l border-slate-300 dark:border-[#3c3c3c] pl-3 overflow-visible" ref={previewDropdownRef}>
+                       <div className="relative ml-1 overflow-visible" ref={previewDropdownRef}>
                            <button
                                 onClick={() => setShowPreviewVersionDropdown(!showPreviewVersionDropdown)}
                                 className="p-1 rounded hover:bg-slate-200 dark:hover:bg-[#3c3c3c] text-slate-500 cursor-pointer"
@@ -1382,16 +1403,16 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                    )}
 
                    <div className="flex items-center gap-2 ml-auto">
-                        <div className="flex items-center gap-1 mr-2" title={t('scale')}>
-                             <span className="text-xs text-slate-500 dark:text-gray-500">{t('scale')}:</span>
+                        <div className="flex items-center gap-1 mr-1" title={t('scale')}>
+                             <span className="hidden lg:inline text-xs text-slate-500 dark:text-gray-500">{t('scale')}:</span>
                              <select value={imageScale} onChange={(e) => setImageScale(Number(e.target.value))} className="bg-white dark:bg-[#333] text-slate-700 dark:text-white text-xs border border-slate-300 dark:border-[#3c3c3c] rounded px-1 py-0.5 outline-none">
                                  <option value={1}>1x</option>
                                  <option value={2}>2x</option>
                                  <option value={3}>3x</option>
                              </select>
                         </div>
-                        <button onClick={handleExportImage} className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#333] hover:bg-slate-50 dark:hover:bg-[#3c3c3c] text-xs text-slate-700 dark:text-white rounded border border-slate-300 dark:border-[#3c3c3c] transition-colors"><Icons.Image />{t('export_image')}</button>
-                        <button onClick={handleExportPDF} className="flex items-center gap-1.5 px-3 py-1 bg-brand-600 dark:bg-brand-700 hover:bg-brand-700 dark:hover:bg-brand-600 text-xs text-white rounded border border-brand-700 dark:border-brand-800 transition-colors"><Icons.Pdf />{t('export_pdf')}</button>
+                        <button onClick={handleExportImage} className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-[#333] hover:bg-slate-50 dark:hover:bg-[#3c3c3c] text-xs text-slate-700 dark:text-white rounded border border-slate-300 dark:border-[#3c3c3c] transition-colors" title={t('export_image')}><Icons.Image /><span className="hidden xl:inline">{t('export_image')}</span></button>
+                        <button onClick={handleExportPDF} className="flex items-center gap-1.5 px-2 py-1 bg-brand-600 dark:bg-brand-700 hover:bg-brand-700 dark:hover:bg-brand-600 text-xs text-white rounded border border-brand-700 dark:border-brand-800 transition-colors" title={t('export_pdf')}><Icons.Pdf /><span className="hidden xl:inline">{t('export_pdf')}</span></button>
                    </div>
                 </div>
 
@@ -1497,6 +1518,9 @@ const ResultViewer: React.FC<ResultViewerProps> = ({
                    master*
                </span>
                <span className="hover:bg-white/10 px-1 rounded cursor-pointer">{generatedCode && activeTab === 'code' ? '0 errors' : ''}</span>
+               <span className="hover:bg-white/10 px-1 rounded cursor-pointer" title="Estimated Tokens">
+                   {estimateTokens(activeTab === 'source' ? sourceCode : generatedCode)} tokens
+               </span>
            </div>
            <div className="flex items-center gap-4">
               <span className="hover:bg-white/10 px-1 rounded cursor-pointer">{getStatusBarInfo()}</span>

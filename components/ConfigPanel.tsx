@@ -136,6 +136,24 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
     setShowPromptModal(true);
   };
 
+  // Estimate Tokens
+  const estimatedTokenCount = React.useMemo(() => {
+      if (!fileData) return 0;
+      const { systemInstruction, userPrompt } = constructPrompts(fileData.content, config, settings);
+      const fullText = systemInstruction + userPrompt;
+      
+      const chineseCount = (fullText.match(/[\u4e00-\u9fa5]/g) || []).length;
+      const otherCount = fullText.length - chineseCount;
+      // Rough estimation: 1 Chinese char = 1 token, 4 English chars = 1 token
+      return chineseCount + Math.ceil(otherCount / 4);
+  }, [fileData, config, settings]);
+
+  const getTokenStatusColor = (count: number) => {
+      if (count > 100000) return 'text-red-500 font-bold';
+      if (count > 32000) return 'text-amber-500 font-bold';
+      return 'text-slate-500 dark:text-slate-400';
+  };
+
   // Improved Flow Status with Dropdown
   const getFlowStatus = () => {
       if (isGenerating) return (
@@ -208,6 +226,28 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                  ) : null}
              </div>
              {fileData ? getFlowStatus() : <div className="text-xs text-slate-400 italic text-center py-1">{t('no_file')}</div>}
+             
+             {/* Token Count Indicator */}
+             {fileData && (
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-1 flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">{t('est_context')}</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className={`font-mono ${getTokenStatusColor(estimatedTokenCount)}`}>
+                            ~{estimatedTokenCount.toLocaleString()} tokens
+                        </span>
+                        {estimatedTokenCount > 32000 && (
+                             <div className="group relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${estimatedTokenCount > 100000 ? 'text-red-500' : 'text-amber-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <div className="absolute right-0 bottom-full mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                    {t('token_warning_tooltip')}
+                                </div>
+                             </div>
+                        )}
+                    </div>
+                </div>
+             )}
           </div>
 
           {/* Configurations */}

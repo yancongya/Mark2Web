@@ -353,6 +353,10 @@ export const translations = {
     test_no_reasoning_content: 'ℹ️ 未检测到独立的思维链内容',
     test_response_preview: '响应内容预览',
 
+    // Token / Context
+    est_context: '预估上下文',
+    token_warning_tooltip: '上下文过长，部分模型可能会截断或失败。建议进行摘要处理。',
+
     // Layout & History
     history: '历史记录',
     new_project: '新建项目',

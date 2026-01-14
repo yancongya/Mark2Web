@@ -15,7 +15,7 @@ import { useAppContext } from '../contexts/AppContext';
 const BuilderPage: React.FC = () => {
   const { t, settings } = useAppContext();
   const navigate = useNavigate();
-  const { projectId } = useParams();
+  const { projectId, tab } = useParams();
 
   // Layout State
   const [showHistory, setShowHistory] = useState(true);
@@ -23,16 +23,23 @@ const BuilderPage: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Viewer State
-  const [activeTab, setActiveTab] = useState<TabType>('source');
+  const activeTab: TabType = (tab === 'preview' || tab === 'code') ? tab : 'source';
 
   // Data State
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // activeId is now derived from URL, defaulting to null if not present
+  const activeId = projectId || null;
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   // Active Project Data
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [activeOutputId, setActiveOutputId] = useState<string | null>(null);
+
+  const handleTabChange = (newTab: TabType) => {
+      if (activeId) {
+          navigate(`/project/${activeId}/${newTab}`);
+      }
+  };
 
   // Default config - USE IDs now
   const [draftConfig, setDraftConfig] = useState<GenerationConfig>({
@@ -67,14 +74,12 @@ const BuilderPage: React.FC = () => {
         });
         setHistory(migrated);
         
-        // Handle initial routing: if URL has projectId, load it
-        if (projectId) {
-            const exists = migrated.find(h => h.id === projectId);
-            if (exists) {
-                setActiveId(projectId);
-            } else {
-                // If ID invalid, maybe redirect or just do nothing (empty state)
-                console.warn(`Project ID ${projectId} not found`);
+        // Handle initial routing: if URL has projectId, it's already in activeId
+        if (activeId) {
+            const exists = migrated.find(h => h.id === activeId);
+            if (!exists) {
+                console.warn(`Project ID ${activeId} not found`);
+                // Optional: navigate('/')?
             }
         }
       } catch (e) {
@@ -83,16 +88,22 @@ const BuilderPage: React.FC = () => {
     }
   }, []); // Only run once on mount
 
+  // Handle Project Switching (Click on Sidebar)
+  const handleSwitchProject = (id: string) => {
+    // FORCE DEFAULT TO SOURCE TAB TO AVOID FLICKERING
+    // The user explicitly requested this behavior.
+    navigate(`/project/${id}/source`);
+  };
+
   // Sync URL when activeId changes
   useEffect(() => {
       if (activeId) {
-          navigate(`/project/${activeId}`, { replace: true });
-      } else {
-          // If no active ID but we are on a project route, maybe clear it? 
-          // Or if we are on root, do nothing.
-          if (projectId) navigate('/', { replace: true });
-      }
-  }, [activeId, navigate]);
+          // If tab is missing in URL, redirect to source default
+          if (!tab) {
+              navigate(`/project/${activeId}/source`, { replace: true });
+          }
+      } 
+  }, [activeId, tab, navigate]);
 
   useEffect(() => {
     if (history.length > 0) {
@@ -135,22 +146,8 @@ const BuilderPage: React.FC = () => {
         } else {
             setActiveOutputId(null);
         }
-
-        if (prevActiveIdRef.current !== activeId) {
-             // Logic to switch tab on project load based on what's most relevant
-             // If we have outputs, show code preview. If only source, show source.
-             if (item.outputs.length > 0) {
-                const activeOut = item.outputs.find(o => o.id === (item.activeOutputId || item.outputs[0].id));
-                const activeOutFormat = activeOut?.format || OutputFormat.HTML;
-                const isPreviewable = activeOut && (activeOutFormat === OutputFormat.HTML || activeOutFormat === OutputFormat.PLAIN_HTML);
-                setActiveTab(isPreviewable ? 'preview' : 'code');
-            } else {
-                setActiveTab('source');
-            }
-        }
       }
     }
-    prevActiveIdRef.current = activeId;
   }, [activeId, history]);
 
   // Update active pointers for persistence
@@ -185,7 +182,7 @@ const BuilderPage: React.FC = () => {
   }, [activeOutputId, activeSourceId, activeId]);
 
   const handleNewProject = useCallback(() => {
-    setActiveId(null);
+    navigate('/');
     prevActiveIdRef.current = null;
     setActiveSourceId(null);
     setActiveOutputId(null);
@@ -196,8 +193,7 @@ const BuilderPage: React.FC = () => {
       customPrompt: '',
       temperature: 0.5
     });
-    setActiveTab('source');
-  }, []);
+  }, [navigate]);
 
   const handleFileLoaded = useCallback((data: FileData) => {
     const isCode = data.type === 'html' || data.type === 'react' || data.type === 'vue';
@@ -263,14 +259,14 @@ const BuilderPage: React.FC = () => {
     };
 
     setHistory(prev => [newItem, ...prev]);
-    setActiveId(newId);
+    // setActiveId(newId); // Removed state update
     setActiveSourceId(initialActiveSourceId);
     if(initialActiveOutputId) setActiveOutputId(initialActiveOutputId);
-    
-    // Set Tab
-    setActiveTab(isCode ? 'preview' : 'source');
 
-  }, [activeId, draftConfig]);
+    // Navigate to new project
+    navigate(`/project/${newId}/${isCode ? 'preview' : 'source'}`);
+    
+  }, [draftConfig, navigate]);
 
   const handleResetFile = useCallback(() => {
     if (activeId && activeSourceId) {
@@ -418,7 +414,7 @@ const BuilderPage: React.FC = () => {
     if (!currentSource) return;
 
     setIsGenerating(true);
-    setActiveTab('preview'); 
+    if (activeId) navigate(`/project/${activeId}/preview`); 
 
     const now = Date.now();
     let currentId = activeId;
@@ -475,9 +471,13 @@ const BuilderPage: React.FC = () => {
       }));
 
     } catch (error: any) {
+      console.error("Generation Error in BuilderPage:", error); // Log full error
       const msg = error.message || t('error_generation');
-      alert(`Generation Failed: ${msg}`);
-      setActiveTab('code'); 
+      // Only alert if it's not a user-initiated stop or trivial error
+      if (!msg.includes('aborted')) {
+          alert(`Generation Failed: ${msg}`);
+      }
+      if (activeId) navigate(`/project/${activeId}/code`); 
     } finally {
       setIsGenerating(false);
     }
@@ -490,7 +490,7 @@ const BuilderPage: React.FC = () => {
       if (!currentOutput) return;
 
       setIsGenerating(true);
-      setActiveTab('source'); 
+      if (activeId) navigate(`/project/${activeId}/source`); 
 
       const now = Date.now();
       const newSourceId = `src-${now}`;
@@ -592,7 +592,7 @@ const BuilderPage: React.FC = () => {
                   <HistorySidebar
                       history={history}
                       activeId={activeId}
-                      onSelect={setActiveId}
+                      onSelect={handleSwitchProject}
                       onNewProject={handleNewProject}
                       onDelete={handleDeleteHistory}
                   />
@@ -658,7 +658,7 @@ const BuilderPage: React.FC = () => {
                       isFullscreen={isFullscreen}
                       onToggleFullscreen={toggleFullscreen}
                       activeTab={activeTab}
-                      onTabChange={setActiveTab}
+                      onTabChange={handleTabChange}
                       onUpdateCode={handleUpdateCode}
                       onUpdateSource={handleUpdateSource}
                     />
