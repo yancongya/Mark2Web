@@ -42,6 +42,13 @@ export interface PromptPreset {
   prompt: string; // The actual instruction sent to LLM
 }
 
+export interface TechStackPreset {
+  id: string; // e.g., 'html', 'react', 'vue'
+  label: string; // e.g., 'HTML5', 'React (TSX)', 'Vue 3'
+  format: OutputFormat; // Associated output format
+  instruction: string; // Tech-specific instructions (replaces ### 关键技术 rules)
+}
+
 export interface ReversePromptConfig {
   contentSystem: string;
   contentUser: string;
@@ -53,11 +60,12 @@ export interface GlobalSettings {
   systemInstruction: string;
   styles: PromptPreset[];
   levels: PromptPreset[];
-  
+  techStacks: TechStackPreset[]; // New: Tech stack instructions
+
   // New Provider Settings
   activeProviderId: string; // ID of the currently selected provider config
   providers: LLMProviderConfig[];
-  
+
   // Advanced Features
   enableWebSearch: boolean; // Grounding / Networking
   enableReasoning: boolean; // Deep Thinking / Chain of Thought

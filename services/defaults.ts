@@ -1,5 +1,5 @@
 
-import { GlobalSettings, StylePreset, ModificationLevel, LLMProviderConfig, ReversePromptConfig } from "../types";
+import { GlobalSettings, StylePreset, ModificationLevel, LLMProviderConfig, ReversePromptConfig, TechStackPreset, OutputFormat } from "../types";
 
 export const DEFAULT_SYSTEM_INSTRUCTION = `
 你是一位世界顶级的 UI/UX 设计师和高级前端工程师 (Specialist in Tailwind CSS)。
@@ -12,18 +12,6 @@ export const DEFAULT_SYSTEM_INSTRUCTION = `
 - **质感**：不要只用纯色背景。熟练使用 \`bg-gradient-to-r\`, \`backdrop-blur-xl\`, \`bg-opacity\`, \`shadow-2xl\`, \`ring-1\` 等工具类。
 - **圆角**：现代设计通常使用较大的圆角 (\`rounded-2xl\`, \`rounded-3xl\`)，除非是特定风格。
 
-### 关键技术规则
-1. **单一文件**：输出必须是完整、独立的单文件代码。严禁引用本地不存在的文件。
-2. **图标处理**：
-   - **HTML 模式**：必须使用内联 SVG 图标 (Heroicons 风格)。不要使用 <i> 标签或外部字体库。
-   - **React (TSX) 模式**：**必须**使用 \`lucide-react\` 库。例如 \`import { Home, User } from "lucide-react";\`。系统环境已预装此库。
-   - **Vue 模式**：使用内联 SVG 或假设已注册的图标组件。
-3. **图片处理**：
-   - 使用 \`https://images.unsplash.com/photo-...\` 的真实图片 URL（如果合适）。
-   - 或者使用高审美的渐变色块 \`div\` 代替图片占位符。
-   - **严禁**使用损坏的链接或需要鉴权的图片。
-4. **移动端优先**：所有布局必须是响应式的。默认编写移动端样式，使用 \`md:\`, \`lg:\` 覆盖桌面端样式。
-
 ### 交互与动效
 - 所有的按钮、卡片、链接必须有 \`hover:\` 状态（颜色变化、轻微上浮、阴影加深）。
 - 使用 \`transition-all duration-300\` 让交互更丝滑。
@@ -33,6 +21,66 @@ export const DEFAULT_SYSTEM_INSTRUCTION = `
 - **严禁幻觉**：仅展示用户提供的内容。如果用户只给了一句话，就围绕这句话设计一个精彩的 Hero Section，不要编造整个公司的历史。
 - **导航栏**：除非用户提供具体菜单项，否则只生成最基础的 Logo/标题占位。
 `.trim();
+
+export const DEFAULT_TECH_STACKS: TechStackPreset[] = [
+  {
+    id: 'html',
+    label: 'HTML5 (Single File)',
+    format: OutputFormat.HTML,
+    instruction: `### 关键技术规则 (HTML)
+1. **单一文件**：输出必须是完整、独立的单文件 HTML 代码。严禁引用本地不存在的文件。
+2. **图标处理**：必须使用内联 SVG 图标 (Heroicons 风格)。不要使用 <i> 标签或外部字体库。
+3. **图片处理**：
+   - 使用 \`https://images.unsplash.com/photo-...\` 的真实图片 URL（如果合适）。
+   - 或者使用高审美的渐变色块 \`div\` 代替图片占位符。
+   - **严禁**使用损坏的链接或需要鉴权的图片。
+4. **移动端优先**：所有布局必须是响应式的。默认编写移动端样式，使用 \`md:\`, \`lg:\` 覆盖桌面端样式。
+5. **样式库**：必须使用 Tailwind CSS (CDN) 进行样式设计。`
+  },
+  {
+    id: 'html-plain',
+    label: 'Plain HTML (No CSS)',
+    format: OutputFormat.PLAIN_HTML,
+    instruction: `### 关键技术规则 (Plain HTML)
+1. **单一文件**：输出必须是完整、独立的单文件 HTML 代码。
+2. **无样式**：严禁使用任何 CSS、Tailwind 类或内联样式。仅使用 HTML 语义标签。
+3. **图标处理**：使用纯文本或简单的 Unicode 符号代替图标。
+4. **图片处理**：仅使用 \`<img>\` 标签的 \`src\` 属性，不添加任何样式。
+5. **结构优先**：专注于内容结构和语义化标签 (header, main, section, article 等)。`
+  },
+  {
+    id: 'react',
+    label: 'React (TSX Component)',
+    format: OutputFormat.TSX,
+    instruction: `### 关键技术规则 (React/TSX)
+1. **纯TSX输出**：必须输出完整的 TSX React 组件代码，**严禁包含 HTML 标签** (如 <!DOCTYPE>, <html>, <body>)。
+2. **单一文件**：输出必须是完整、独立的 TSX React 组件代码。严禁引用本地不存在的文件。
+3. **组件结构**：使用函数式组件 + TypeScript 接口定义。必须导出默认组件。
+4. **图标处理**：**必须**使用 \`lucide-react\` 库。例如 \`import { Home, User } from "lucide-react";\`。
+5. **样式处理**：使用 Tailwind CSS 类名 (className)。确保导入了正确的 Tailwind CDN。
+6. **图片处理**：
+   - 使用 \`https://images.unsplash.com/photo-...\` 的真实图片 URL。
+   - 或者使用高审美的渐变色块 \`div\` 代替图片占位符。
+7. **响应式**：使用 Tailwind 的断点前缀 (\`md:\`, \`lg:\`) 确保移动端优先。
+8. **React 特性**：可以使用 React Hooks (useState, useEffect 等) 增加交互性。
+9. **类型安全**：为组件 props 和状态添加适当的 TypeScript 类型。`
+  },
+  {
+    id: 'vue',
+    label: 'Vue 3 (SFC)',
+    format: OutputFormat.VUE,
+    instruction: `### 关键技术规则 (Vue 3 SFC)
+1. **单一文件**：输出必须是完整的 Vue 3 单文件组件 (.vue 格式)。
+2. **组件结构**：使用 Vue 3 Composition API (<script setup>)。
+3. **图标处理**：使用内联 SVG 或假设已注册的图标组件。
+4. **样式处理**：使用 Tailwind CSS 类名。确保在模板中正确应用。
+5. **图片处理**：
+   - 使用 \`https://images.unsplash.com/photo-...\` 的真实图片 URL。
+   - 或者使用高审美的渐变色块 \`div\` 代替图片占位符。
+6. **响应式**：使用 Tailwind 的断点前缀 (\`md:\`, \`lg:\`) 确保移动端优先。
+7. **Vue 特性**：可以使用 ref, reactive, computed 等 Vue 3 响应式特性增加交互性。`
+  }
+];
 
 export const DEFAULT_REVERSE_PROMPTS: ReversePromptConfig = {
     contentSystem: `你是一位“内容提纯专家”。你的任务是从杂乱的代码中提取出核心的文本信息和逻辑结构，忽略所有的视觉噪音。`,
@@ -183,11 +231,12 @@ export const DEFAULT_SETTINGS: GlobalSettings = {
   systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
   styles: DEFAULT_STYLES,
   levels: DEFAULT_LEVELS,
-  
+  techStacks: DEFAULT_TECH_STACKS,
+
   // Provider Defaults
   activeProviderId: 'gemini-official',
   providers: DEFAULT_PROVIDERS,
-  
+
   // Advanced
   enableWebSearch: false,
   enableReasoning: false,

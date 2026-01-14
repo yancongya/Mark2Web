@@ -328,22 +328,20 @@ export const constructPrompts = (
   const selectedLevel = settings.levels.find(l => l.id === config.level);
   const levelInstruction = selectedLevel ? selectedLevel.prompt : "Standard layout structure.";
 
-  let techInstruction = "";
-  if (config.format === OutputFormat.HTML) {
-      techInstruction = "Output Format: HTML5 Single File. Styling: Tailwind CSS (CDN).";
-  } else if (config.format === OutputFormat.PLAIN_HTML) {
-      techInstruction = "Output Format: HTML5 Semantic Only. Styling: None (No CSS).";
-  } else if (config.format === OutputFormat.TSX) {
-      techInstruction = "Output Format: React (TSX) Functional Component. Styling: Tailwind CSS classes. Use Lucide-React for icons.";
-  } else if (config.format === OutputFormat.VUE) {
-      techInstruction = "Output Format: Vue 3 Single File Component (SFC). Styling: Tailwind CSS classes.";
-  }
+  // Find the tech stack instruction based on the output format
+  const selectedTechStack = settings.techStacks.find(ts => ts.format === config.format);
+  const techInstruction = selectedTechStack ? selectedTechStack.instruction : "";
 
   const temp = config.temperature;
   let tempInstruction = "";
   if (temp <= 0.3) tempInstruction = "Strict Compliance. Follow the structure exactly.";
   else if (temp <= 0.7) tempInstruction = "Balanced Creativity. Enhance visual presentation reasonably.";
   else tempInstruction = "High Creativity. Use imagination to enhance the visual layout significantly.";
+
+  // Combine system instruction with tech stack instruction
+  const combinedSystemInstruction = techInstruction
+    ? `${settings.systemInstruction}\n\n${techInstruction}`
+    : settings.systemInstruction;
 
   const userPrompt = `
     Input Content:
@@ -352,7 +350,6 @@ export const constructPrompts = (
     ---
 
     Configuration Requirements:
-    - ${techInstruction}
     - Visual Style: ${selectedStyle ? selectedStyle.label : 'Custom'} -> ${styleInstruction}
     - Refinement Level: ${selectedLevel ? selectedLevel.label : 'Custom'} -> ${levelInstruction}
     - Creativity Level (Temperature ${temp}): ${tempInstruction}
@@ -360,7 +357,7 @@ export const constructPrompts = (
 
     ---------------------------------------------------
     CRITICAL INSTRUCTION - NO MARKDOWN / NO WRAPPING:
-    1. OUTPUT ONLY THE RAW CODE. 
+    1. OUTPUT ONLY THE RAW CODE.
     2. DO NOT wrap the code in \`\`\`html, \`\`\`tsx, or \`\`\`xml blocks.
     3. DO NOT include any introductory text ("Here is your code...") or conclusion.
     4. Start immediately with the code (e.g., <!DOCTYPE html> or import React).
@@ -371,7 +368,7 @@ export const constructPrompts = (
   `;
 
   return {
-    systemInstruction: settings.systemInstruction.trim(),
+    systemInstruction: combinedSystemInstruction.trim(),
     userPrompt: userPrompt.trim()
   };
 };

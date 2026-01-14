@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { testProviderConnection, fetchProviderModels } from '../services/llmService';
-import { PromptPreset, LLMProviderConfig } from '../types';
+import { PromptPreset, LLMProviderConfig, TechStackPreset } from '../types';
 
 const SettingsModal: React.FC = () => {
   const { t, settings, updateSettings, resetSettings, isSettingsOpen, setSettingsOpen } = useAppContext();
 
   // Settings Editor State
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'provider' | 'system' | 'styles' | 'levels' | 'reverse'>('provider');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'provider' | 'system' | 'styles' | 'levels' | 'tech' | 'reverse'>('provider');
   const [tempSettings, setTempSettings] = useState(settings);
 
   // Connection Test States
@@ -48,6 +48,14 @@ const SettingsModal: React.FC = () => {
           const list = [...prev[type]];
           list[index] = { ...list[index], [field]: value };
           return { ...prev, [type]: list };
+      });
+  };
+
+  const updateTechStack = (index: number, field: keyof TechStackPreset, value: string) => {
+      setTempSettings(prev => {
+          const list = [...prev.techStacks];
+          list[index] = { ...list[index], [field]: value };
+          return { ...prev, techStacks: list };
       });
   };
 
@@ -183,7 +191,13 @@ const SettingsModal: React.FC = () => {
               >
                 {t('settings_tab_levels')}
               </button>
-               <button
+              <button
+                onClick={() => setActiveSettingsTab('tech')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'tech' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+              >
+                {t('settings_tab_tech')}
+              </button>
+              <button
                 onClick={() => setActiveSettingsTab('reverse')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeSettingsTab === 'reverse' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
               >
@@ -574,6 +588,48 @@ const SettingsModal: React.FC = () => {
                                     className="w-full h-40 p-3 bg-white dark:bg-[#1e1e1e] border border-slate-300 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-y text-slate-900 dark:text-slate-300"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              {/* TECH STACK SETTINGS */}
+              {activeSettingsTab === 'tech' && (
+                <div className="h-full overflow-y-auto custom-scrollbar p-6">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                               {t('settings_tech_desc')}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {tempSettings.techStacks.map((techStack, index) => (
+                                <div key={techStack.id} className="bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-[#333] rounded-lg p-4 shadow-sm hover:border-brand-300 transition-colors">
+                                    <div className="mb-3">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Format Label</label>
+                                        <input
+                                            type="text"
+                                            value={techStack.label}
+                                            readOnly
+                                            className="w-full text-sm font-bold bg-slate-50 dark:bg-[#252526] border border-slate-200 dark:border-[#333] rounded px-2 py-1 text-slate-700 dark:text-slate-300"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Tech Instruction (Key Technical Rules)</label>
+                                        <textarea
+                                            value={techStack.instruction}
+                                            onChange={(e) => updateTechStack(index, 'instruction', e.target.value)}
+                                            className="w-full h-48 p-3 bg-slate-50 dark:bg-[#252526] border border-slate-200 dark:border-[#333] rounded-lg font-mono text-sm focus:ring-1 focus:ring-brand-500 outline-none resize-y text-slate-700 dark:text-slate-300"
+                                            placeholder="Enter tech-specific instructions for this format..."
+                                        />
+                                    </div>
+                                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <span className="font-semibold">Format:</span> {techStack.format} |
+                                        <span className="font-semibold ml-2">ID:</span> {techStack.id}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
