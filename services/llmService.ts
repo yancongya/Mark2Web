@@ -338,40 +338,56 @@ export const constructPrompts = (
   else if (temp <= 0.7) tempInstruction = "Balanced Creativity. Enhance visual presentation reasonably.";
   else tempInstruction = "High Creativity. Use imagination to enhance the visual layout significantly.";
 
-  // Combine system instruction with tech stack instruction
+  // Prioritize Custom Prompt if available
+  if (config.customPrompt && config.customPrompt.trim().length > 0) {
+      return {
+          systemInstruction: settings.systemInstruction, // Keep system instruction (persona)
+          userPrompt: `
+Input Content:
+---
+${content}
+---
+
+${config.customPrompt}
+          `.trim()
+      };
+  }
+
+  // Fallback to Template Prompt if no custom prompt is provided
   const combinedSystemInstruction = techInstruction
-    ? `${settings.systemInstruction}\n\n${techInstruction}`
-    : settings.systemInstruction;
-
+      ? `${settings.systemInstruction}\n\n${techInstruction}`
+      : settings.systemInstruction;
+  
   const userPrompt = `
-    Input Content:
-    ---
-    ${content || "[Content will be inserted here]"}
-    ---
-
-    Configuration Requirements:
-    - Visual Style: ${selectedStyle ? selectedStyle.label : 'Custom'} -> ${styleInstruction}
-    - Refinement Level: ${selectedLevel ? selectedLevel.label : 'Custom'} -> ${levelInstruction}
-    - Creativity Level (Temperature ${temp}): ${tempInstruction}
-    - Custom User Instructions: ${config.customPrompt || "None"}
-
-    ---------------------------------------------------
-    CRITICAL INSTRUCTION - NO MARKDOWN / NO WRAPPING:
-    1. OUTPUT ONLY THE RAW CODE.
-    2. DO NOT wrap the code in \`\`\`html, \`\`\`tsx, or \`\`\`xml blocks.
-    3. DO NOT include any introductory text ("Here is your code...") or conclusion.
-    4. Start immediately with the code (e.g., <!DOCTYPE html> or import React).
-    5. Ensure the code is complete and valid.
-    ---------------------------------------------------
-
-    Generate the complete, runnable code now.
-  `;
-
-  return {
-    systemInstruction: combinedSystemInstruction.trim(),
-    userPrompt: userPrompt.trim()
+      输入内容:
+      ---
+      ${content || "[等待输入内容]"}
+      ---
+  
+      配置要求:
+      - 视觉风格: ${selectedStyle ? selectedStyle.label : '自定义'} -> ${styleInstruction}
+      - 精细度: ${selectedLevel ? selectedLevel.label : '自定义'} -> ${levelInstruction}
+      - 创意程度 (Temperature ${temp}): ${tempInstruction}
+      - 用户自定义指令: ${config.customPrompt || "无"}
+  
+      ---------------------------------------------------
+      关键指令 - 禁止 Markdown / 禁止包裹:
+      1. 仅输出原始代码 (Raw Code)。
+      2. 严禁使用 \`\`\`html, \`\`\`tsx, 或 \`\`\`xml 代码块包裹。
+      3. 严禁包含任何介绍性文字（如“这是您的代码...”）或结束语。
+      4. 直接以代码开始（例如 <!DOCTYPE html> 或 import React）。
+      5. 确保代码完整且有效，不要截断。
+      6. **所有注释和页面文本内容必须使用中文**，除非原文是英文。
+      ---------------------------------------------------
+  
+      立即生成完整、可运行的代码。
+    `;
+  
+    return {
+      systemInstruction: combinedSystemInstruction.trim(),
+      userPrompt: userPrompt.trim()
+    };
   };
-};
 
 /**
  * Robustly extracts code from a response that might contain Markdown wrappers,
@@ -439,6 +455,7 @@ const generateViaGoogle = async (
     const aiConfig: any = {
         systemInstruction: systemInstruction,
         tools: tools.length > 0 ? tools : undefined,
+        maxOutputTokens: 8192, // Ensure sufficient length for full code generation
     };
 
     try {
@@ -492,7 +509,8 @@ const generateViaOpenAICompatible = async (
               { role: 'user', content: userPrompt }
           ],
           stream: true,
-          temperature: config.temperature
+          temperature: config.temperature,
+          max_tokens: 8192 // Ensure sufficient length for full code generation
       };
 
       // For Xiaomi Mimo, try multiple URL patterns if no proxy is set

@@ -144,16 +144,31 @@ const AppContent: React.FC = () => {
   // Update active pointers for persistence
   useEffect(() => {
       if (activeId) {
-          setHistory(prev => prev.map(h => {
-              if (h.id === activeId) {
-                  return {
-                      ...h,
-                      activeSourceId: activeSourceId || h.activeSourceId,
-                      activeOutputId: activeOutputId || h.activeOutputId
-                  };
+          setHistory(prev => {
+              const current = prev.find(h => h.id === activeId);
+              // Determine next values
+              const nextSourceId = activeSourceId || (current?.activeSourceId);
+              const nextOutputId = activeOutputId || (current?.activeOutputId);
+
+              // Optimization: Bail out if no actual change to history is needed
+              // This breaks the infinite loop between loading state (L104) and syncing state (L145)
+              if (current && 
+                  current.activeSourceId === nextSourceId && 
+                  current.activeOutputId === nextOutputId) {
+                  return prev;
               }
-              return h;
-          }));
+
+              return prev.map(h => {
+                  if (h.id === activeId) {
+                      return {
+                          ...h,
+                          activeSourceId: nextSourceId || h.activeSourceId, // Safe fallback
+                          activeOutputId: nextOutputId || h.activeOutputId
+                      };
+                  }
+                  return h;
+              });
+          });
       }
   }, [activeOutputId, activeSourceId, activeId]);
 

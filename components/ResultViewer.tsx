@@ -304,8 +304,11 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
              componentName = 'App';
         }
 
-        const escapedReactCode = escapeCodeForTemplate(cleanCode);
-
+        // --- ROBUST TSX HANDLING ---
+        // Store raw code in a script tag to avoid inline script escaping hell
+        // Use Babel.transform to compile it properly with filename to enforce TS parsing
+        const escapedScriptContent = cleanCode.replace(/<\/script>/g, '<\\/script>');
+        
         return `
 <!DOCTYPE html>
 <html lang="en">
@@ -324,6 +327,12 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
 <body>
     <div id="root"></div>
     <div id="error-container"></div>
+    
+    <!-- Hide raw code in a text/plain script to avoid execution and parsing issues -->
+    <script type="text/plain" id="raw-tsx-source">
+${escapedScriptContent}
+    </script>
+
     <script>
       window.onerror = function(message, source, lineno, colno, error) { 
         const container = document.getElementById('error-container'); 
@@ -331,7 +340,31 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
         console.error("Preview Error:", message, error);
         window.parent.postMessage({ type: 'PREVIEW_READY' }, '*'); 
       };
+
+      // Lucide Icons Setup - Enhanced to handle prop conversion
       window.lucideReact = {};
+      
+      const toCamelCase = (str) => {
+          return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+      };
+
+      const convertAttrs = (attrs) => {
+          if (!attrs) return {};
+          const newAttrs = {};
+          Object.keys(attrs).forEach(key => {
+              // Convert common SVG attributes to React camelCase
+              const reactKey = key === 'class' ? 'className' : 
+                               key === 'stroke-width' ? 'strokeWidth' :
+                               key === 'stroke-linecap' ? 'strokeLinecap' :
+                               key === 'stroke-linejoin' ? 'strokeLinejoin' :
+                               key === 'fill-rule' ? 'fillRule' :
+                               key === 'clip-rule' ? 'clipRule' :
+                               toCamelCase(key);
+              newAttrs[reactKey] = attrs[key];
+          });
+          return newAttrs;
+      };
+
       if (window.lucide && window.lucide.icons) {
         Object.keys(window.lucide.icons).forEach(key => {
            window.lucideReact[key] = (props) => {
@@ -339,44 +372,77 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
               const iconNode = window.lucide.icons[key]; 
               if (!iconNode) return null;
               const [tag, baseAttrs, childrenNodes] = iconNode;
+              
               const createEl = (node, index) => {
                  const [childTag, childAttrs, childChildren] = node;
-                 return React.createElement(childTag, { ...childAttrs, key: index }, childChildren ? childChildren.map((c, i) => createEl(c, i)) : null);
+                 // Recursively create children with converted attributes
+                 return React.createElement(
+                     childTag, 
+                     { ...convertAttrs(childAttrs), key: index }, 
+                     childChildren ? childChildren.map((c, i) => createEl(c, i)) : null
+                 );
               };
+              
               const children = (childrenNodes || []).map((child, i) => createEl(child, i));
-              return React.createElement('svg', { ...baseAttrs, width: size, height: size, stroke: color, strokeWidth: strokeWidth, className: className ? ('lucide lucide-' + key + ' ' + className) : ('lucide lucide-' + key), ...rest }, children);
+              
+              return React.createElement('svg', { 
+                  ...convertAttrs(baseAttrs), 
+                  width: size, 
+                  height: size, 
+                  stroke: color, 
+                  strokeWidth: strokeWidth, 
+                  className: className ? ('lucide lucide-' + key + ' ' + className) : ('lucide lucide-' + key), 
+                  ...rest 
+              }, children);
            };
         });
       }
-    </script>
-    <script type="text/babel" data-presets="react,typescript">
-      try {
-        const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, createContext } = React;
-        ${escapedReactCode}
-        
-        let RenderComponent;
-        if (typeof App !== 'undefined') RenderComponent = App;
-        
-        if (!RenderComponent) {
-            ${componentName && componentName !== 'App' ? `if (typeof ${componentName} !== 'undefined') RenderComponent = ${componentName};` : ''}
-        }
-        
-        if (!RenderComponent) {
-            if (typeof Page !== 'undefined') RenderComponent = Page;
-            else if (typeof Component !== 'undefined') RenderComponent = Component;
-            else if (typeof Hero !== 'undefined') RenderComponent = Hero;
-            else if (typeof Main !== 'undefined') RenderComponent = Main;
-            else if (typeof LandingPage !== 'undefined') RenderComponent = LandingPage;
-            else if (typeof Portfolio !== 'undefined') RenderComponent = Portfolio;
-        }
 
-        if (!RenderComponent) throw new Error("Could not find a component to render. Ensure you export default a component.");
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<RenderComponent />);
-        window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
+      // Main Execution Logic
+      try {
+          const rawCode = document.getElementById('raw-tsx-source').textContent;
+          
+          // Manually transform the code using Babel with filename option to force TS parsing
+          const compiled = Babel.transform(rawCode, {
+              presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
+              filename: 'component.tsx', // Critical for TS parsing
+          }).code;
+
+          // Create a function to execute the compiled code safely
+          // We expose React hooks to the global scope or function scope
+          const runComponent = new Function('React', 'ReactDOM', 'window', \`
+              const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, createContext } = React;
+              
+              \${compiled}
+
+              let RenderComponent;
+              if (typeof App !== 'undefined') RenderComponent = App;
+              
+              if (!RenderComponent) {
+                  ${componentName && componentName !== 'App' ? `if (typeof ${componentName} !== 'undefined') RenderComponent = ${componentName};` : ''}
+              }
+              
+              if (!RenderComponent) {
+                  if (typeof Page !== 'undefined') RenderComponent = Page;
+                  else if (typeof Component !== 'undefined') RenderComponent = Component;
+                  else if (typeof Hero !== 'undefined') RenderComponent = Hero;
+                  else if (typeof Main !== 'undefined') RenderComponent = Main;
+                  else if (typeof LandingPage !== 'undefined') RenderComponent = LandingPage;
+                  else if (typeof Portfolio !== 'undefined') RenderComponent = Portfolio;
+              }
+
+              if (!RenderComponent) throw new Error("Could not find a component to render. Ensure you export default a component.");
+              
+              const root = ReactDOM.createRoot(document.getElementById('root'));
+              root.render(React.createElement(RenderComponent));
+              window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
+          \`);
+
+          runComponent(React, ReactDOM, window);
+
       } catch (e) {
-        console.error("React Render Error:", e);
-        document.getElementById('error-container').innerHTML = '<div class="error-overlay"><h3>Render Error</h3><p>' + e.message + '</p></div>';
+        console.error("Compilation/Render Error:", e);
+        document.getElementById('error-container').innerHTML = '<div class="error-overlay"><h3>Compilation Error</h3><pre>' + e.message + '</pre></div>';
         window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
       }
     </script>
