@@ -1,5 +1,6 @@
 
 import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 
 // GSAP declarations for CDN usage
@@ -7,9 +8,7 @@ declare var gsap: any;
 declare var ScrollTrigger: any;
 declare const Prism: any; // Ensure Prism is accessible
 
-interface LandingPageProps {
-  onStart: () => void;
-}
+interface LandingPageProps {}
 
 const CODE_SNIPPET = `import React from 'react';
 import { motion } from 'framer-motion';
@@ -32,11 +31,14 @@ export const FutureUI = () => {
   );
 }`;
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = () => {
   const { t } = useAppContext();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // 3D Tilt State
+  const handleStart = () => {
+    navigate('/');
+  };
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [mouseFactor, setMouseFactor] = useState({ x: 0, y: 0 }); // Normalized -1 to 1
   const [isHovering, setIsHovering] = useState(false);
@@ -294,7 +296,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 
                 <div className="hero-text-item flex flex-wrap gap-4">
                    <button 
-                     onClick={onStart}
+                     onClick={handleStart}
                      className="group relative px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-lg font-bold rounded-xl shadow-2xl hover:shadow-brand-500/25 overflow-hidden transition-all duration-300 hover:-translate-y-1"
                    >
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
@@ -637,7 +639,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tight text-slate-900 dark:text-white">{t('ready_title')}</h2>
               <p className="text-xl text-slate-600 dark:text-slate-300 mb-10 max-w-2xl mx-auto">{t('ready_desc')}</p>
               <button 
-                onClick={onStart}
+                onClick={handleStart}
                 className="group px-10 py-5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-lg font-bold rounded-full shadow-lg hover:shadow-brand-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 mx-auto"
               >
                   {t('launch_editor')}
