@@ -320,6 +320,70 @@ const AppContent: React.FC = () => {
       }
   };
 
+  const handleDeleteOutput = (outputId: string) => {
+      if (!activeId) return;
+
+      setHistory(prev => prev.map(item => {
+          if (item.id === activeId) {
+              const newOutputs = item.outputs.filter(o => o.id !== outputId);
+              let newActiveOutputId = item.activeOutputId;
+
+              // If we deleted the active output, select another one
+              if (item.activeOutputId === outputId) {
+                  newActiveOutputId = newOutputs.length > 0 ? newOutputs[newOutputs.length - 1].id : null;
+              }
+
+              return {
+                  ...item,
+                  outputs: newOutputs,
+                  activeOutputId: newActiveOutputId
+              };
+          }
+          return item;
+      }));
+
+      // Update state if we deleted the active output
+      setHistory(prev => {
+          const currentItem = prev.find(item => item.id === activeId);
+          if (currentItem && currentItem.activeOutputId !== activeOutputId) {
+              setActiveOutputId(currentItem.activeOutputId);
+          }
+          return prev;
+      });
+  };
+
+  const handleDeleteSource = (sourceId: string) => {
+      if (!activeId) return;
+
+      setHistory(prev => prev.map(item => {
+          if (item.id === activeId) {
+              const newSources = item.sources.filter(s => s.id !== sourceId);
+              let newActiveSourceId = item.activeSourceId;
+
+              // If we deleted the active source, select another one
+              if (item.activeSourceId === sourceId) {
+                  newActiveSourceId = newSources.length > 0 ? newSources[newSources.length - 1].id : null;
+              }
+
+              return {
+                  ...item,
+                  sources: newSources,
+                  activeSourceId: newActiveSourceId
+              };
+          }
+          return item;
+      }));
+
+      // Update state if we deleted the active source
+      setHistory(prev => {
+          const currentItem = prev.find(item => item.id === activeId);
+          if (currentItem && currentItem.activeSourceId !== activeSourceId) {
+              setActiveSourceId(currentItem.activeSourceId);
+          }
+          return prev;
+      });
+  };
+
   // --- ACTION: Generate Code (Forward) ---
   const handleGenerate = async () => {
     const activeProject = history.find(h => h.id === activeId);
@@ -555,12 +619,14 @@ const AppContent: React.FC = () => {
                       outputs={currentOutputs}
                       activeOutputId={activeOutputId}
                       onSelectOutput={setActiveOutputId}
+                      onDeleteOutput={handleDeleteOutput}
 
                       // Sources Management
                       sources={currentSources}
                       activeSourceId={activeSourceId}
                       onSelectSource={setActiveSourceId}
                       onRenameSource={handleRenameSource}
+                      onDeleteSource={handleDeleteSource}
                       sourceCode={activeSource?.content || ''}
                       fileName={activeSource?.name || 'Loading...'}
 
