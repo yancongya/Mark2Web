@@ -220,15 +220,8 @@ const SIGNAL_SCRIPT = `
 `;
 
 const escapeCodeForTemplate = (code: string) => {
-    // 1. Backslashes must be doubled
-    // 2. Backticks must be escaped to not break the template literal
-    // 3. ${ must be escaped to not trigger interpolation in the PARENT (ResultViewer) context
-    // 4. </script> must be broken to not close the tag early
-    return code
-        .replace(/\\/g, '\\\\') 
-        .replace(/`/g, '\\`')
-        .replace(/\$/g, '\\$')
-        .replace(/<\/script>/g, '<\\/script>');
+    // Only need to break the closing script tag to prevent HTML parsing issues
+    return code.replace(/<\/script>/g, '<\\/script>');
 };
 
 const generatePreviewHtml = (code: string, format: OutputFormat) => {
@@ -283,7 +276,8 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
 
         let cleanCode = code;
         cleanCode = cleanCode.replace(/import\s+\{([\s\S]*?)\}\s+from\s+['"]lucide-react['"];?/g, 'const {$1} = window.lucideReact;');
-        cleanCode = cleanCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, '').replace(/import\s+['"].*?['"];?/g, '');
+        // Improved regex to handle multiline imports
+        cleanCode = cleanCode.replace(/import\s+[\s\S]*?from\s+['"].*?['"];?/g, '').replace(/import\s+['"].*?['"];?/g, '');
         
         let componentName = null;
         const functionMatch = cleanCode.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
@@ -322,8 +316,8 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@0.294.0"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+    <script src="https://unpkg.com/lucide@0.294.0" crossorigin></script>
     <style>body { margin: 0; padding: 0; } .error-overlay { position: fixed; top: 0; left: 0; width: 100%; padding: 20px; background: #fee2e2; color: #991b1b; z-index: 10000; font-family: monospace; border-bottom: 2px solid #7f1d1d; }</style>
     ${PRINT_STYLES}
 </head>
@@ -358,22 +352,27 @@ const generatePreviewHtml = (code: string, format: OutputFormat) => {
     <script type="text/babel" data-presets="react,typescript">
       try {
         const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, createContext } = React;
-        let App; 
         ${escapedReactCode}
-        if (typeof App === 'undefined') {
-            ${componentName && componentName !== 'App' ? `if (typeof ${componentName} !== 'undefined') App = ${componentName};` : ''}
-            if (typeof App === 'undefined') {
-                if (typeof Page !== 'undefined') App = Page;
-                else if (typeof Component !== 'undefined') App = Component;
-                else if (typeof Hero !== 'undefined') App = Hero;
-                else if (typeof Main !== 'undefined') App = Main;
-                else if (typeof LandingPage !== 'undefined') App = LandingPage;
-                else if (typeof Portfolio !== 'undefined') App = Portfolio;
-            }
+        
+        let RenderComponent;
+        if (typeof App !== 'undefined') RenderComponent = App;
+        
+        if (!RenderComponent) {
+            ${componentName && componentName !== 'App' ? `if (typeof ${componentName} !== 'undefined') RenderComponent = ${componentName};` : ''}
         }
-        if (typeof App === 'undefined') throw new Error("Could not find a component to render. Ensure you export default a component.");
+        
+        if (!RenderComponent) {
+            if (typeof Page !== 'undefined') RenderComponent = Page;
+            else if (typeof Component !== 'undefined') RenderComponent = Component;
+            else if (typeof Hero !== 'undefined') RenderComponent = Hero;
+            else if (typeof Main !== 'undefined') RenderComponent = Main;
+            else if (typeof LandingPage !== 'undefined') RenderComponent = LandingPage;
+            else if (typeof Portfolio !== 'undefined') RenderComponent = Portfolio;
+        }
+
+        if (!RenderComponent) throw new Error("Could not find a component to render. Ensure you export default a component.");
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<RenderComponent />);
         window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
       } catch (e) {
         console.error("React Render Error:", e);
