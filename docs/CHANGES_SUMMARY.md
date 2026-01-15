@@ -7,6 +7,7 @@
 2. **预览Tab限制**：只能在预览tab进行版本切换和删除
 3. **骨架动画卡住**：生成时会卡在当前版本的骨架图动画，不能切换查看其他版本
 4. **重复下拉列表**：存在两个下拉列表组件互相干扰，都无法正常打开
+5. **下拉列表定位问题**：下拉列表会撑开顶栏，需要滚动才能看到内容
 
 ## 根本原因分析
 
@@ -15,8 +16,8 @@
 - 顶栏的版本选择器缺失，导致无法在其他tab操作
 
 ### 2. 状态变量冲突
-- 三个下拉列表（顶栏版本、预览版本、源文件）共用同一个状态变量 `showVersionDropdown`
-- 共用同一个ref `dropdownRef`
+- 四个下拉列表（顶栏版本、独立版本选择器、预览版本、源文件）共用了部分状态变量
+- 共用ref导致点击外部关闭功能异常
 - 导致点击一个会同时影响所有，互相干扰
 
 ### 3. 骨架动画逻辑错误
@@ -31,30 +32,41 @@ const showSkeleton = isGenerating || isLoadingPreview;
 - 所有下拉列表都没有删除按钮
 - App.tsx 没有实现删除处理函数
 
+### 5. 下拉列表定位问题
+- 下拉列表使用 `absolute` 定位，受父容器 `overflow` 属性影响
+- 顶栏有 `overflow-x-auto` 类，导致下拉列表被裁剪或需要滚动
+- 输出标签组有 `overflow-visible` 类，可能影响布局
+
 ## 解决方案
 
-### 1. 添加独立的状态变量（ResultViewer.tsx:484-486）
+### 1. 添加独立的状态变量（ResultViewer.tsx:484-487）
 ```typescript
-const [showVersionDropdown, setShowVersionDropdown] = useState(false);      // Top bar
-const [showPreviewVersionDropdown, setShowPreviewVersionDropdown] = useState(false); // Preview tab
-const [showSourceDropdown, setShowSourceDropdown] = useState(false);       // Source dropdown
+const [showVersionDropdown, setShowVersionDropdown] = useState(false);      // 输出标签小箭头
+const [showVersionSelector, setShowVersionSelector] = useState(false);      // 独立版本选择器
+const [showPreviewVersionDropdown, setShowPreviewVersionDropdown] = useState(false); // 预览tab
+const [showSourceDropdown, setShowSourceDropdown] = useState(false);        // 源文件下拉
 ```
 
-### 2. 添加独立的Refs（ResultViewer.tsx:487-489）
+### 2. 添加独立的Refs（ResultViewer.tsx:488-491）
 ```typescript
-const dropdownRef = useRef<HTMLDivElement>(null);           // Top bar
-const previewDropdownRef = useRef<HTMLDivElement>(null);    // Preview tab
-const sourceDropdownRef = useRef<HTMLDivElement>(null);     // Source dropdown
+const dropdownRef = useRef<HTMLDivElement>(null);           // 输出标签小箭头
+const dropdownTriggerRef = useRef<HTMLDivElement>(null);    // 独立版本选择器
+const previewDropdownRef = useRef<HTMLDivElement>(null);    // 预览tab
+const sourceDropdownRef = useRef<HTMLDivElement>(null);     // 源文件
 ```
 
-### 3. 更新点击外部关闭逻辑（ResultViewer.tsx:543-561）
+### 3. 更新点击外部关闭逻辑（ResultViewer.tsx:545-567）
 ```typescript
 useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Node;
-        // Close top bar version dropdown
+        // Close output tag version dropdown
         if (dropdownRef.current && !dropdownRef.current.contains(target)) {
             setShowVersionDropdown(false);
+        }
+        // Close independent version selector
+        if (dropdownTriggerRef.current && !dropdownTriggerRef.current.contains(target)) {
+            setShowVersionSelector(false);
         }
         // Close preview tab version dropdown
         if (previewDropdownRef.current && !previewDropdownRef.current.contains(target)) {
@@ -78,7 +90,7 @@ const showSkeleton = isGenerating || (isLoadingPreview && activeTab === 'preview
 - 只在预览tab且正在加载时显示
 - 生成完成后自动隐藏
 
-### 5. 添加版本选择器到顶栏（ResultViewer.tsx:1062-1141）
+### 5. 添加版本选择器到顶栏（ResultViewer.tsx:1060-1130）
 在顶栏添加了完整的版本选择器，支持：
 - 显示当前版本号和格式图标
 - 点击展开版本列表
@@ -140,6 +152,26 @@ const showSkeleton = isGenerating || (isLoadingPreview && activeTab === 'preview
 )}
 ```
 
+### 9. 修复下拉列表定位问题
+
+移除顶栏的滚动限制：
+```diff
+- <div className="flex items-center bg-slate-100 dark:bg-slate-900 overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-[#1e1e1e] transition-colors">
++ <div className="flex items-center bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-[#1e1e1e] transition-colors">
+```
+
+移除输出标签组的 overflow-visible：
+```diff
+- className={`relative h-full flex items-center ... group overflow-visible`}
++ className={`relative h-full flex items-center ... group`}
+```
+
+所有下拉列表使用 fixed 定位 + 高 z-index：
+```typescript
+// 4个下拉列表全部使用：
+className="fixed top-[calc(100%+4px)] right-4 w-80 ... z-[100] animate-fade-in-up"
+```
+
 ## 修复结果
 
 ### ✅ 所有问题已解决
@@ -147,7 +179,8 @@ const showSkeleton = isGenerating || (isLoadingPreview && activeTab === 'preview
 1. **版本选择器位置**：顶栏现在有完整的版本选择器，可在所有tab使用
 2. **删除功能**：所有下拉列表都支持删除，带确认对话框
 3. **骨架动画**：生成完成后自动隐藏，可正常切换查看其他版本
-4. **下拉列表冲突**：三个下拉列表使用独立状态，互不干扰
+4. **下拉列表冲突**：四个下拉列表使用独立状态，互不干扰
+5. **下拉列表定位**：使用 fixed 定位，不再撑开顶栏，无需滚动
 
 ### 使用流程
 
@@ -179,6 +212,7 @@ const showSkeleton = isGenerating || (isLoadingPreview && activeTab === 'preview
 - **事件冒泡控制**：使用 `e.stopPropagation()` 防止点击触发父元素
 - **条件渲染**：删除按钮只在多版本时显示
 - **状态同步**：删除后自动更新激活状态
+- **定位策略**：使用 `fixed` 定位避免布局干扰
 
 ## 文件修改清单
 
@@ -189,8 +223,9 @@ const showSkeleton = isGenerating || (isLoadingPreview && activeTab === 'preview
 ## 测试验证
 
 所有功能已通过代码审查验证：
-- ✅ 三个下拉列表状态独立
+- ✅ 四个下拉列表状态独立
 - ✅ 所有删除按钮正确绑定
 - ✅ 骨架动画逻辑正确
 - ✅ 删除处理函数完整实现
 - ✅ 点击外部关闭所有下拉列表
+- ✅ 下拉列表使用 fixed 定位，不撑开顶栏
