@@ -122,6 +122,16 @@ The easiest way to deploy Mark2Web is to use Vercel, the creators of Next.js and
 
 For detailed deployment instructions, see [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md).
 
+### Using Custom Domain
+
+You can connect a custom domain to your Vercel deployment:
+
+1. Add your domain in Vercel project settings
+2. Configure your DNS provider with the DNS records provided by Vercel
+3. Wait for DNS propagation to complete
+
+For detailed guide on Cloudflare and Vercel integration, see [docs/CLOUDFLARE_VERCEL_INTEGRATION.md](./docs/CLOUDFLARE_VERCEL_INTEGRATION.md).
+
 ### Known Issues
 
 If you encounter a JavaScript module loading error after deployment:
@@ -235,6 +245,16 @@ This is typically due to Vercel's routing configuration. Our `vercel.json` file 
 4. 部署到 Vercel: `vercel`
 
 有关详细的部署说明，请参阅 [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md)。
+
+### 使用自定义域名
+
+您可以将自定义域名连接到您的 Vercel 部署：
+
+1. 在 Vercel 项目设置中添加您的域名
+2. 按照 Vercel 提供的 DNS 记录配置您的 DNS 提供商
+3. 等待 DNS 传播完成
+
+有关 Cloudflare 与 Vercel 集成的详细指南，请参阅 [docs/CLOUDFLARE_VERCEL_INTEGRATION.md](./docs/CLOUDFLARE_VERCEL_INTEGRATION.md)。
 
 ### 已知问题
 

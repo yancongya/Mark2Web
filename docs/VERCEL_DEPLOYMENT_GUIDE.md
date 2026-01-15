@@ -194,3 +194,15 @@ Failed to load module script: Expected a JavaScript-or-Wasm module script but th
 1. 重新部署项目
 2. 清除浏览器缓存
 3. 检查Vercel仪表板是否有错误日志
+
+### 使用自定义域名
+
+如果您想使用自定义域名，请参考我们的集成指南：
+- 详细指南: [docs/CLOUDFLARE_VERCEL_INTEGRATION.md](../CLOUDFLARE_VERCEL_INTEGRATION.md)
+- 快速入门: [docs/CLOUDFLARE_VERCEL_QUICK_START.md](../CLOUDFLARE_VERCEL_QUICK_START.md)
+
+基本步骤：
+1. 在 Vercel 项目设置中添加您的域名
+2. 按照 Vercel 提供的 DNS 记录配置您的 DNS 提供商（如 Cloudflare）
+3. 等待 DNS 传播完成（可能需要几小时）
+4. 验证域名配置是否成功
