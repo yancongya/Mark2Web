@@ -48,7 +48,7 @@ npm install
    - `Link to existing project?` → 选择 `N` (如果是首次部署)
    - `What's your project's name?` → 输入项目名称（例如：mark2web）
    - `In which directory is your code located?` → 输入 `.` (表示当前目录)
-   
+
    对于后续问题，通常可以按 Enter 使用默认值。
 
 4. **配置项目设置**

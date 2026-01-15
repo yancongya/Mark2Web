@@ -2,7 +2,7 @@
 
 ## 一键部署
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/mark2web)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yancongya/Mark2Web)
 
 点击上面的按钮即可快速部署到 Vercel。
 

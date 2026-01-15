@@ -1,7 +1,7 @@
 {
-  "name": "反推升级-markweb---ai-page-generator",
+  "name": "mark2web",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,5 +24,10 @@
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yancongya/Mark2Web.git"
+  },
+  "homepage": "https://github.com/yancongya/Mark2Web#readme"
 }
