@@ -106,6 +106,24 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
 
 ---
 
+## ☁️ Deployment
+
+### Deploy to Vercel
+
+The easiest way to deploy Mark2Web is to use Vercel, the creators of Next.js and popular hosting platform for React applications.
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/mark2web)
+
+**Manual Deployment Steps:**
+1. Install the Vercel CLI: `npm i -g vercel`
+2. Login to Vercel: `vercel login`
+3. Run the build command: `npm run build`
+4. Deploy to Vercel: `vercel`
+
+For detailed deployment instructions, see [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md).
+
+---
+
 <a id="chinese"></a>
 
 ## 🚀 项目简介
@@ -190,6 +208,24 @@ Simply upload a Markdown file, text description, or paste a screenshot descripti
     *   下载源码文件。
     *   生成全网页长截图 (Long Screenshot)。
     *   导出 PDF 文档。
+
+---
+
+## ☁️ 部署
+
+### 部署到 Vercel
+
+部署 Mark2Web 最简单的方法是使用 Vercel，这是 Next.js 的创建者和 React 应用的流行托管平台。
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/mark2web)
+
+**手动部署步骤：**
+1. 安装 Vercel CLI: `npm i -g vercel`
+2. 登录 Vercel: `vercel login`
+3. 运行构建命令: `npm run build`
+4. 部署到 Vercel: `vercel`
+
+有关详细的部署说明，请参阅 [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md)。
 
 ---
 
