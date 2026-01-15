@@ -17,7 +17,7 @@ const App: React.FC = () => {
           {/* 默认构建页（无项目ID时，通常是新建或加载上次的项目） */}
           <Route path="/" element={<BuilderPage />} />
           
-          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/intro" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

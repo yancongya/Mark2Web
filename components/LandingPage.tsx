@@ -336,7 +336,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
                             </div>
                         ))}
                     </div>
-                    <span>Trusted by 1,000+ developers</span>
+                    <span>{t('trusted_by_text')}</span>
                 </div>
             </div>
 
@@ -451,10 +451,11 @@ const LandingPage: React.FC<LandingPageProps> = () => {
                          </div>
                          <div className="flex flex-wrap gap-3 mt-8">
                              {[
-                                { name: 'Gemini 2.0', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-                                { name: 'GPT-4o', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
                                 { name: 'DeepSeek', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
-                                { name: 'Groq', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' }
+                                { name: 'Xiaomi Mimo', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+                                { name: 'Gemini', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+                                { name: 'Ollama (Local)', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+                                { name: 'OpenAI (Custom)', color: 'bg-green-500/20 text-green-300 border-green-500/30' }
                              ].map((model) => (
                                  <span key={model.name} className={`px-3 py-1.5 backdrop-blur-md rounded-lg text-sm font-medium border ${model.color} transition-transform hover:scale-105 cursor-default`}>
                                      {model.name}

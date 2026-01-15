@@ -120,6 +120,17 @@ export const translations = {
     settings_custom_model_id: 'Custom Model ID',
     settings_proxy_url: 'Proxy URL (for CORS-restricted APIs)',
     settings_proxy_placeholder: 'e.g., https://your-proxy.com/api',
+    settings_proxy_required_mimo: '(Required: Cloudflare Worker)',
+    settings_auto_setup_proxy: 'Auto Setup Proxy',
+    
+    // Mimo Auto Setup Dialog
+    mimo_setup_title: 'Auto Setup Proxy',
+    mimo_setup_desc: 'Enter invite code to auto-configure Xiaomi Mimo proxy.',
+    mimo_setup_placeholder: 'Enter Invite Code',
+    mimo_setup_cancel: 'Cancel',
+    mimo_setup_unlock: 'Unlock',
+    mimo_setup_success: '✅ Auto-configured Proxy URL successfully!',
+    mimo_setup_invalid: '❌ Invalid Invite Code',
 
     // Test Results
     test_success: 'Connected Successfully',
@@ -180,18 +191,19 @@ export const translations = {
     editor_close: 'Close',
 
     // Landing Page
-    landing_hero_tag: 'GenAI 2.0 Powered',
+    landing_hero_tag: 'vicoding',
     landing_hero_title_1: 'Code your',
     landing_hero_title_2: 'Dreams Instantly',
-    landing_hero_desc: 'Convert Markdown and sketches into production-ready React, Vue, or HTML components. No boilerplate, just pure creation.',
+    landing_hero_desc: 'Use custom AI to transform Markdown or plain text into usable HTML, React, or Vue code.',
     landing_cta_start: 'Start Building',
     landing_cta_explore: 'Explore Features',
+    trusted_by_text: 'Numerous preset configurations',
     
     features_title: 'Powerful Features',
     features_subtitle: 'Everything you need to turn ideas into deployed code.',
     
     feature_universal_title: 'Universal AI Models',
-    feature_universal_desc: 'Powered by Gemini 2.0, with support for OpenAI (GPT-4o), DeepSeek, and Groq. Choose the best brain for your code.',
+    feature_universal_desc: 'Support DeepSeek, Xiaomi Mimo, Gemini, and local Ollama to save costs. Compatible with OpenAI custom URLs and models.',
     
     feature_visual_title: 'Visual AI Editor',
     feature_visual_desc: 'Click any element in the preview to instruct AI to change styling or content instantly.',
@@ -355,6 +367,17 @@ export const translations = {
     settings_custom_model_id: '自定义模型 ID',
     settings_proxy_url: '代理 URL (用于 CORS 受限的 API)',
     settings_proxy_placeholder: '例如: https://your-proxy.com/api',
+    settings_proxy_required_mimo: '(必需: Cloudflare Worker)',
+    settings_auto_setup_proxy: '自动配置代理',
+
+    // Mimo Auto Setup Dialog
+    mimo_setup_title: '自动配置代理',
+    mimo_setup_desc: '输入邀请码以自动配置小米 Mimo 代理地址。',
+    mimo_setup_placeholder: '输入邀请码',
+    mimo_setup_cancel: '取消',
+    mimo_setup_unlock: '解锁配置',
+    mimo_setup_success: '✅ 代理地址自动配置成功！',
+    mimo_setup_invalid: '❌ 邀请码无效',
 
     // Test Results
     test_success: '连接成功',
@@ -419,18 +442,19 @@ export const translations = {
     editor_close: '关闭',
 
     // Landing Page
-    landing_hero_tag: 'GenAI 2.0 驱动',
+    landing_hero_tag: 'vicoding',
     landing_hero_title_1: '瞬间将文本',
     landing_hero_title_2: '转化为精美网页',
-    landing_hero_desc: '利用 Gemini AI 和 Tailwind CSS，将 Markdown 或纯文本转化为可用的 HTML、React 或 Vue 代码。',
+    landing_hero_desc: '使用自定义ai，将 Markdown 或纯文本转化为可用的 HTML、React 或 Vue 代码。',
     landing_cta_start: '开始构建',
     landing_cta_explore: '探索功能',
+    trusted_by_text: '大量预设配置',
 
     features_title: '强大功能',
     features_subtitle: '将创意转化为已部署代码所需的一切。',
 
     feature_universal_title: '全模型支持',
-    feature_universal_desc: '原生支持 Google Gemini 2.0，兼容 OpenAI (GPT-4o)、DeepSeek 和 Groq。自由切换模型大脑。',
+    feature_universal_desc: '支持 DeepSeek, Xiaomi Mimo, Gemini 等模型，还可以使用本地的 Ollama 节省开支，并且兼容 OpenAI 自定义 URL 和模型。',
     
     feature_visual_title: 'AI 可视化编辑器',
     feature_visual_desc: '点击预览中的任意元素，直接通过 AI 指令修改样式或内容，所见即所得。',

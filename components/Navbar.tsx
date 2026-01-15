@@ -1,5 +1,6 @@
 
 import React, { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 
 interface NavbarProps {
@@ -9,54 +10,55 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onLogoClick, currentView = 'app' }) => {
   const { t, theme, toggleTheme, language, setLanguage, exportSettings, importSettings, setSettingsOpen } = useAppContext();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleScrollTo = (id: string) => {
     if (currentView !== 'landing') {
-        onLogoClick(); // Go home first if not there
-        setTimeout(() => {
-            const el = document.getElementById(id);
-            el?.scrollIntoView({ behavior: 'smooth' });
-        }, 500);
+        navigate('/intro');
     } else {
         const el = document.getElementById(id);
         el?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  const handleLogoClick = () => {
+      navigate('/intro');
+  };
+
   return (
     <nav className="h-16 fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-8 transition-all duration-300">
       <div 
         className="flex items-center gap-3 cursor-pointer group"
-        onClick={onLogoClick}
+        onClick={handleLogoClick}
       >
-        <div className="bg-gradient-to-tr from-brand-600 to-indigo-600 text-white p-1.5 rounded-lg shadow-sm group-hover:shadow-brand-500/50 transition-all group-hover:scale-110">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-            </svg>
+        <div className="w-8 h-8 group-hover:scale-110 transition-transform">
+             <img 
+               src="/logo.svg" 
+               alt="Mark2Web Logo" 
+               className={`w-full h-full ${theme === 'dark' ? 'invert brightness-0' : ''}`} 
+             />
         </div>
         <span className="font-bold text-xl text-slate-900 dark:text-white tracking-tight group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-            {t('app_title')}
+            Mark2Web
         </span>
       </div>
 
-      {/* Center Links - Only visible on landing */}
-      {currentView === 'landing' && (
-          <div className="hidden md:flex items-center gap-8">
-              <button onClick={() => handleScrollTo('features')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
-                  {t('nav_features')}
-              </button>
-              <button onClick={() => handleScrollTo('demo')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
-                  {t('nav_demo')}
-              </button>
-              <button onClick={() => handleScrollTo('workflow')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
-                  {t('nav_workflow')}
-              </button>
-              <button onClick={() => handleScrollTo('cta-section')} className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors border border-brand-200 dark:border-brand-800 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-900/10">
-                  {t('nav_start')}
-              </button>
-          </div>
-      )}
+      {/* Center Links */}
+      <div className="hidden md:flex items-center gap-8">
+          <button onClick={() => handleScrollTo('features')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
+              {t('nav_features')}
+          </button>
+          <button onClick={() => handleScrollTo('demo')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
+              {t('nav_demo')}
+          </button>
+          <button onClick={() => handleScrollTo('workflow')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
+              {t('nav_workflow')}
+          </button>
+          <button onClick={() => handleScrollTo('cta-section')} className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors border border-brand-200 dark:border-brand-800 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-900/10">
+              {t('nav_start')}
+          </button>
+      </div>
 
       <div className="flex items-center gap-3">
         {/* Import/Export Settings */}

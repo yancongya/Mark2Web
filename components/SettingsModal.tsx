@@ -20,6 +20,24 @@ const SettingsModal: React.FC = () => {
   const [customModelMode, setCustomModelMode] = useState<{[key: number]: boolean}>({});
   const [visibleKeys, setVisibleKeys] = useState<{[key: number]: boolean}>({});
 
+  const [showMimoDialog, setShowMimoDialog] = useState(false);
+  const [mimoInviteCode, setMimoInviteCode] = useState('');
+  
+  const handleMimoSetup = () => {
+      if (mimoInviteCode === 'mark2web') {
+          const workerUrl = 'https://mimo-proxy.besscroft.workers.dev';
+          // Find Xiaomi Mimo provider index
+          const mimoIndex = tempSettings.providers.findIndex(p => p.providerId.includes('xiaomi'));
+          if (mimoIndex !== -1) {
+              updateProvider(mimoIndex, 'proxyUrl', workerUrl);
+              alert(t('mimo_setup_success'));
+              setShowMimoDialog(false);
+          }
+      } else {
+          alert(t('mimo_setup_invalid'));
+      }
+  };
+
   // Effect to initialize temp settings when modal opens globally
   useEffect(() => {
     if (isSettingsOpen) {
@@ -302,23 +320,35 @@ const SettingsModal: React.FC = () => {
 
                                             {(p.type === 'custom' || p.type === 'openai' || p.type === 'google') && (
                                                  <div className="mt-2">
-                                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                                                          {t('settings_proxy_url')}
                                                          {p.providerId.includes('xiaomi') && (
-                                                             <span className="ml-2 text-brand-600 dark:text-brand-400 text-[10px] font-normal">
-                                                                 (必需: Cloudflare Worker)
-                                                             </span>
+                                                             <>
+                                                                <span className="text-brand-600 dark:text-brand-400 text-[10px] font-normal">
+                                                                    (必需: Cloudflare Worker)
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => setShowMimoDialog(true)}
+                                                                    className="ml-1 p-0.5 text-brand-500 hover:text-brand-600 dark:text-brand-400 transition-transform hover:scale-110"
+                                                                    title={t('settings_auto_setup_proxy')}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </button>
+                                                             </>
                                                          )}
                                                      </label>
                                                      <input
-                                                         type="text"
-                                                         value={p.proxyUrl || ''}
-                                                         onChange={(e) => updateProvider(idx, 'proxyUrl', e.target.value)}
-                                                         placeholder={p.providerId.includes('xiaomi')
-                                                             ? 'https://your-worker.workers.dev'
-                                                             : t('settings_proxy_placeholder')}
-                                                         className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors font-mono"
-                                                     />
+                                                        type="text"
+                                                        value={p.providerId.includes('xiaomi') && p.proxyUrl === 'https://mimo-proxy.besscroft.workers.dev' ? '********************************' : p.proxyUrl || ''}
+                                                        onChange={(e) => updateProvider(idx, 'proxyUrl', e.target.value)}
+                                                        readOnly={p.providerId.includes('xiaomi') && p.proxyUrl === 'https://mimo-proxy.besscroft.workers.dev'}
+                                                        placeholder={p.providerId.includes('xiaomi')
+                                                            ? 'https://your-worker.workers.dev'
+                                                            : t('settings_proxy_placeholder')}
+                                                        className={`w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors font-mono ${p.providerId.includes('xiaomi') && p.proxyUrl === 'https://mimo-proxy.besscroft.workers.dev' ? 'opacity-60 cursor-not-allowed text-slate-500 italic' : ''}`}
+                                                    />
                                                      {p.providerId.includes('xiaomi') && !p.proxyUrl && (
                                                          <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-xs">
                                                              <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
@@ -611,6 +641,47 @@ const SettingsModal: React.FC = () => {
 
            </div>
        </div>
+       
+       {/* Secret Mimo Setup Dialog */}
+       {showMimoDialog && (
+           <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in">
+               <div className="bg-white dark:bg-slate-900 w-80 p-6 rounded-2xl shadow-2xl border border-brand-500/30 transform scale-100 transition-all">
+                   <div className="text-center mb-4">
+                       <div className="w-12 h-12 bg-brand-100 dark:bg-brand-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-600 dark:text-brand-400" viewBox="0 0 20 20" fill="currentColor">
+                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                           </svg>
+                       </div>
+                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('mimo_setup_title')}</h3>
+                       <p className="text-xs text-slate-500 mt-1">{t('mimo_setup_desc')}</p>
+                   </div>
+                   
+                   <input
+                       type="text"
+                       value={mimoInviteCode}
+                       onChange={(e) => setMimoInviteCode(e.target.value)}
+                       placeholder={t('mimo_setup_placeholder')}
+                       className="w-full p-2 text-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg mb-4 focus:ring-2 focus:ring-brand-500 outline-none font-mono tracking-widest uppercase"
+                       autoFocus
+                   />
+                   
+                   <div className="flex gap-2">
+                       <button
+                           onClick={() => setShowMimoDialog(false)}
+                           className="flex-1 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                       >
+                           {t('mimo_setup_cancel')}
+                       </button>
+                       <button
+                           onClick={handleMimoSetup}
+                           className="flex-1 py-2 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-lg shadow-brand-500/20"
+                       >
+                           {t('mimo_setup_unlock')}
+                       </button>
+                   </div>
+               </div>
+           </div>
+       )}
     </div>
   );
 };
