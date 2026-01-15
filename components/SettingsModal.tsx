@@ -212,39 +212,6 @@ const SettingsModal: React.FC = () => {
                 <div className="h-full overflow-y-auto custom-scrollbar p-6">
                     <div className="max-w-4xl mx-auto space-y-8 pb-10">
 
-                        {/* Advanced Capabilities Toggle */}
-                        <div className="bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-[#333] rounded-lg p-5 shadow-sm">
-                            <h4 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-                                {t('settings_advanced_caps')}
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#252526] rounded border border-slate-200 dark:border-[#3c3c3c] cursor-pointer hover:border-brand-400 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={tempSettings.enableWebSearch}
-                                        onChange={(e) => setTempSettings({...tempSettings, enableWebSearch: e.target.checked})}
-                                        className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
-                                    />
-                                    <div>
-                                        <div className="text-sm font-medium text-slate-900 dark:text-white">{t('settings_web_search')}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('settings_google_search_desc')}</div>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#252526] rounded border border-slate-200 dark:border-[#3c3c3c] cursor-pointer hover:border-brand-400 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={tempSettings.enableReasoning}
-                                        onChange={(e) => setTempSettings({...tempSettings, enableReasoning: e.target.checked})}
-                                        className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
-                                    />
-                                    <div>
-                                        <div className="text-sm font-medium text-slate-900 dark:text-white">{t('settings_reasoning')}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('settings_reasoning_desc')}</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30 flex-shrink-0">
                             <p className="text-sm text-blue-700 dark:text-blue-300">
                                {t('settings_provider_desc')}
@@ -277,57 +244,63 @@ const SettingsModal: React.FC = () => {
                                             <div className="flex items-end gap-2">
                                                  <div className="flex-1">
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">{t('settings_api_key')}</label>
-                                                     <div className="flex gap-2">
-                                                        <div className="flex-1 relative">
-                                                            <input
-                                                                type={visibleKeys[idx] ? "text" : "password"}
-                                                                placeholder="sk-..."
-                                                                value={p.apiKey}
-                                                                onChange={(e) => updateProvider(idx, 'apiKey', e.target.value)}
-                                                                className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors pr-8"
-                                                            />
+                                                     {p.type === 'ollama' ? (
+                                                         <div className="text-sm p-2 bg-slate-100 dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded text-slate-500 dark:text-slate-400 italic">
+                                                             API Key not required for Ollama
+                                                         </div>
+                                                     ) : (
+                                                         <div className="flex gap-2">
+                                                            <div className="flex-1 relative">
+                                                                <input
+                                                                    type={visibleKeys[idx] ? "text" : "password"}
+                                                                    placeholder="sk-..."
+                                                                    value={p.apiKey}
+                                                                    onChange={(e) => updateProvider(idx, 'apiKey', e.target.value)}
+                                                                    className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors pr-8"
+                                                                />
+                                                                <button
+                                                                    onClick={() => toggleKeyVisibility(idx)}
+                                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                                    title={visibleKeys[idx] ? "Hide Key" : "Show Key"}
+                                                                >
+                                                                    {visibleKeys[idx] ? (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
                                                             <button
-                                                                onClick={() => toggleKeyVisibility(idx)}
-                                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                                                                title={visibleKeys[idx] ? "Hide Key" : "Show Key"}
+                                                                onClick={() => handleTestConnection(idx)}
+                                                                disabled={testingIndex === idx || (!p.apiKey && p.type !== 'ollama')}
+                                                                className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium rounded transition-colors disabled:opacity-50"
                                                             >
-                                                                {visibleKeys[idx] ? (
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                                    </svg>
-                                                                ) : (
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                                    </svg>
-                                                                )}
+                                                                {testingIndex === idx ? t('settings_testing') : t('settings_test')}
                                                             </button>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleTestConnection(idx)}
-                                                            disabled={testingIndex === idx || !p.apiKey}
-                                                            className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium rounded transition-colors disabled:opacity-50"
-                                                        >
-                                                            {testingIndex === idx ? t('settings_testing') : t('settings_test')}
-                                                        </button>
-                                                     </div>
+                                                         </div>
+                                                     )}
                                                  </div>
                                             </div>
 
-                                            {(p.type === 'custom' || p.type === 'openai') && (
+                                            {(p.type === 'custom' || p.type === 'openai' || p.type === 'google' || p.type === 'ollama') && (
                                                  <div>
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">{t('settings_base_url')}</label>
                                                      <input
                                                          type="text"
                                                          value={p.baseUrl || ''}
                                                          onChange={(e) => updateProvider(idx, 'baseUrl', e.target.value)}
-                                                         placeholder="https://api.openai.com/v1"
+                                                         placeholder={p.type === 'google' ? "https://generativelanguage.googleapis.com" : (p.type === 'ollama' ? "http://localhost:11434" : "https://api.openai.com/v1")}
                                                          className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors font-mono"
                                                      />
                                                  </div>
                                             )}
 
-                                            {(p.type === 'custom' || p.type === 'openai') && (
+                                            {(p.type === 'custom' || p.type === 'openai' || p.type === 'google') && (
                                                  <div className="mt-2">
                                                      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
                                                          {t('settings_proxy_url')}
@@ -395,6 +368,7 @@ const SettingsModal: React.FC = () => {
                                                         <div className="relative">
                                                             <input
                                                                 type="text"
+                                                                autoFocus
                                                                 value={p.modelId}
                                                                 onChange={(e) => updateProvider(idx, 'modelId', e.target.value)}
                                                                 className="w-full text-sm p-2 bg-white dark:bg-[#252526] border border-slate-300 dark:border-[#3c3c3c] rounded focus:ring-1 focus:ring-brand-500 outline-none transition-colors pr-8"
@@ -414,7 +388,7 @@ const SettingsModal: React.FC = () => {
                                                  </div>
                                                  <button
                                                     onClick={() => handleFetchModels(idx)}
-                                                    disabled={fetchingModelsIndex === idx || !p.apiKey}
+                                                    disabled={fetchingModelsIndex === idx || (!p.apiKey && p.type !== 'ollama')}
                                                     className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium rounded transition-colors disabled:opacity-50 h-[38px]"
                                                     title={t('settings_fetch_models')}
                                                  >

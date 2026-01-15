@@ -22,7 +22,7 @@ export enum ModificationLevel {
   CREATIVE = 'creative'
 }
 
-export type LLMProviderType = 'google' | 'openai' | 'custom';
+export type LLMProviderType = 'google' | 'openai' | 'custom' | 'ollama';
 
 export interface LLMProviderConfig {
   providerId: string; // e.g., 'gemini-pro', 'gpt-4', 'deepseek-v3'

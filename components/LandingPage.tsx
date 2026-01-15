@@ -2,6 +2,9 @@
 import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
+import Navbar from './Navbar';
+import SettingsModal from './SettingsModal';
+import CodeDemoSection from './CodeDemoSection';
 
 // GSAP declarations for CDN usage
 declare var gsap: any;
@@ -39,6 +42,13 @@ const LandingPage: React.FC<LandingPageProps> = () => {
   const handleStart = () => {
     navigate('/');
   };
+
+  const handleLogoClick = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [mouseFactor, setMouseFactor] = useState({ x: 0, y: 0 }); // Normalized -1 to 1
   const [isHovering, setIsHovering] = useState(false);
@@ -257,6 +267,8 @@ const LandingPage: React.FC<LandingPageProps> = () => {
         ref={containerRef} 
         className="landing-container w-full h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans custom-scrollbar scroll-smooth relative snap-y snap-proximity scroll-pt-16"
     >
+      <Navbar onLogoClick={handleLogoClick} currentView="landing" />
+      <SettingsModal />
       
       {/* Background Ambience & Parallax Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden parallax-trigger">
@@ -562,6 +574,9 @@ const LandingPage: React.FC<LandingPageProps> = () => {
             </div>
          </div>
       </section>
+
+      {/* Code Demo Interactive Section */}
+      <CodeDemoSection />
 
       {/* Workflow Section - Redesigned Left-Right Alternating Layout */}
       <section id="workflow" className="snap-start py-24 px-6 relative z-10 flex items-center min-h-[50vh]">

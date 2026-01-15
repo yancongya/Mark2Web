@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/api/xiaomi': {
+            target: 'https://api.xiaomimimo.com',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/xiaomi/, '')
+          }
+        }
       },
       plugins: [react()],
       define: {

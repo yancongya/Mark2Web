@@ -46,6 +46,9 @@ const Navbar: React.FC<NavbarProps> = ({ onLogoClick, currentView = 'app' }) => 
               <button onClick={() => handleScrollTo('features')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
                   {t('nav_features')}
               </button>
+              <button onClick={() => handleScrollTo('demo')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
+                  {t('nav_demo')}
+              </button>
               <button onClick={() => handleScrollTo('workflow')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-white transition-colors">
                   {t('nav_workflow')}
               </button>

@@ -198,23 +198,15 @@ export const DEFAULT_PROVIDERS: LLMProviderConfig[] = [
     type: 'openai',
     label: 'OpenAI (Official)',
     apiKey: '',
-    modelId: 'gpt-4o',
+    modelId: '', // Default empty to allow user to enter/fetch
     baseUrl: 'https://api.openai.com/v1'
-  },
-  {
-    providerId: 'groq',
-    type: 'custom',
-    label: 'Groq (Fast)',
-    apiKey: '',
-    modelId: 'llama-3.3-70b-versatile',
-    baseUrl: 'https://api.groq.com/openai/v1'
   },
   {
     providerId: 'deepseek',
     type: 'custom',
     label: 'DeepSeek (Official)',
     apiKey: '',
-    modelId: 'deepseek-chat',
+    modelId: '',
     baseUrl: 'https://api.deepseek.com'
   },
   {
@@ -222,8 +214,16 @@ export const DEFAULT_PROVIDERS: LLMProviderConfig[] = [
     type: 'custom',
     label: 'Xiaomi Mimo',
     apiKey: '',
-    modelId: 'mimo-v2-flash',
+    modelId: '',
     baseUrl: 'https://api.xiaomimimo.com'
+  },
+  {
+    providerId: 'ollama-local',
+    type: 'ollama',
+    label: 'Ollama (Local)',
+    apiKey: '', // Not required for Ollama
+    modelId: '', // User fetches
+    baseUrl: 'http://localhost:11434'
   }
 ];
 

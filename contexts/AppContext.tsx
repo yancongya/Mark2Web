@@ -63,10 +63,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const parsed = JSON.parse(savedSettings);
         // Merge with defaults to ensure new fields (if any in future) are present,
         // but prioritize saved values.
-        setSettings({
+        
+        // MIGRATION LOGIC: Check if providers list is outdated
+        // 1. Remove 'groq' if it exists (deprecated in favor of cleaner list)
+        // 2. Add 'ollama-local' if it doesn't exist
+        
+        let mergedProviders = parsed.providers || DEFAULT_SETTINGS.providers;
+        
+        // Remove Groq if present (cleanup)
+        mergedProviders = mergedProviders.filter((p: any) => p.providerId !== 'groq');
+        
+        // Check for Ollama
+        const hasOllama = mergedProviders.some((p: any) => p.providerId === 'ollama-local');
+        if (!hasOllama) {
+            // Find Ollama from defaults
+            const defaultOllama = DEFAULT_SETTINGS.providers.find(p => p.providerId === 'ollama-local');
+            if (defaultOllama) {
+                mergedProviders.push(defaultOllama);
+            }
+        }
+        
+        const mergedSettings = {
             ...DEFAULT_SETTINGS,
-            ...parsed
-        });
+            ...parsed,
+            providers: mergedProviders
+        };
+
+        setSettings(mergedSettings);
+        
+        // Persist the migration immediately so it sticks
+        localStorage.setItem('markweb_settings_v1', JSON.stringify(mergedSettings));
+        
       } catch (e) {
         console.error("Failed to load settings", e);
       }

@@ -63,7 +63,10 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
   const handleFetchModels = async () => {
     const activeProvider = settings.providers.find(p => p.providerId === settings.activeProviderId);
-    if (!activeProvider || !activeProvider.apiKey) {
+    if (!activeProvider) return;
+    
+    // For Ollama, API Key is optional. For others, it's usually required.
+    if (activeProvider.type !== 'ollama' && !activeProvider.apiKey) {
       alert("Please configure API key first in Settings");
       return;
     }
@@ -258,7 +261,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('settings_provider_select')}</label>
                     <button
                         onClick={handleFetchModels}
-                        disabled={isFetchingModels || !settings.providers.find(p => p.providerId === settings.activeProviderId)?.apiKey}
+                        disabled={isFetchingModels || (!settings.providers.find(p => p.providerId === settings.activeProviderId)?.apiKey && settings.providers.find(p => p.providerId === settings.activeProviderId)?.type !== 'ollama')}
                         className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                         {isFetchingModels ? (

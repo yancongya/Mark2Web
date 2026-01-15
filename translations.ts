@@ -52,8 +52,14 @@ export const translations = {
 
     // Navbar
     nav_features: 'Features',
+    nav_demo: 'Interactive Demo',
     nav_workflow: 'How it Works',
     nav_start: 'Start Using',
+
+    // Demo Section
+    demo_label: 'Interactive Demo',
+    demo_title: 'Write Code, See Magic',
+    demo_desc: 'Experience how different frameworks transform your ideas into reality. Switch between modes to see the underlying mechanics.',
 
     // Config Copy & Debug
     copy_config: 'Copy as Prompt',
@@ -281,8 +287,14 @@ export const translations = {
 
     // Navbar
     nav_features: '功能特点',
+    nav_demo: '交互演示',
     nav_workflow: '工作原理',
     nav_start: '开始使用',
+
+    // Demo Section
+    demo_label: '交互式演示',
+    demo_title: '代码即刻生效',
+    demo_desc: '体验不同框架如何将您的想法转化为现实。切换模式以查看底层机制。',
 
     // Config Copy & Debug
     copy_config: '复制 Prompt',
