@@ -153,3 +153,44 @@ Vercel 会自动优化你的应用：
 - 查看 [Vercel 文档](https://vercel.com/docs)
 - 在 Vercel 社区论坛提问
 - 检查项目中的 `vercel.json` 配置是否正确
+
+## 常见部署问题
+
+### JavaScript模块加载错误
+
+如果部署后出现类似以下错误：
+```
+Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html"
+```
+
+这通常是由于Vercel的路由配置问题导致的。我们的`vercel.json`文件已经包含了适当的头部配置来解决这个问题：
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*\\.js)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.css)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css; charset=utf-8"
+        }
+      ]
+    }
+  ]
+}
+```
+
+如果仍有问题，请尝试：
+1. 重新部署项目
+2. 清除浏览器缓存
+3. 检查Vercel仪表板是否有错误日志

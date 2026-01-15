@@ -67,3 +67,19 @@ vercel
 - 部署前请先在本地测试 `npm run build`
 - 首次部署可能需要几分钟时间
 - 部署完成后，Vercel 会提供一个唯一的 URL 访问你的应用
+
+## 常见问题
+
+### JavaScript模块加载错误
+
+如果部署后出现类似以下错误：
+```
+Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html"
+```
+
+这通常是由于Vercel的路由配置问题导致的。我们的`vercel.json`文件已经包含了适当的头部配置来解决这个问题。
+
+如果仍有问题，请尝试：
+1. 重新部署项目
+2. 清除浏览器缓存
+3. 检查Vercel仪表板是否有错误日志

@@ -16,6 +16,21 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
+      build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
+        sourcemap: false,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              vendor: ['react', 'react-dom'],
+              router: ['react-router-dom'],
+              ai: ['@google/genai'],
+              utils: ['html-to-image', 'html2canvas', 'marked']
+            }
+          }
+        }
+      },
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),

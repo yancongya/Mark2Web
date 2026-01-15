@@ -122,6 +122,15 @@ The easiest way to deploy Mark2Web is to use Vercel, the creators of Next.js and
 
 For detailed deployment instructions, see [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md).
 
+### Known Issues
+
+If you encounter a JavaScript module loading error after deployment:
+```
+Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html"
+```
+
+This is typically due to Vercel's routing configuration. Our `vercel.json` file includes proper headers to address this issue. If problems persist, try clearing your browser cache or redeploying the project.
+
 ---
 
 <a id="chinese"></a>
@@ -226,6 +235,15 @@ For detailed deployment instructions, see [docs/VERCEL_DEPLOYMENT_GUIDE.md](./do
 4. 部署到 Vercel: `vercel`
 
 有关详细的部署说明，请参阅 [docs/VERCEL_DEPLOYMENT_GUIDE.md](./docs/VERCEL_DEPLOYMENT_GUIDE.md)。
+
+### 已知问题
+
+如果部署后遇到JavaScript模块加载错误：
+```
+Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html"
+```
+
+这通常是由于Vercel的路由配置导致的。我们的 `vercel.json` 文件包含了适当的头部配置来解决此问题。如果问题仍然存在，请尝试清除浏览器缓存或重新部署项目。
 
 ---
 
